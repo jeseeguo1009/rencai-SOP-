@@ -1,0 +1,2702 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新人入职SOP管理系统</title>
+
+    <!-- Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Vue Router 4 -->
+    <script src="https://unpkg.com/vue-router@4/dist/vue-router.global.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Dexie.js for IndexedDB -->
+    <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1B2838;
+            --accent: #FF6B35;
+            --secondary: #4DD8E8;
+            --light-bg: #f5f7fa;
+            --border: #e0e6ed;
+            --text-primary: #333;
+            --text-secondary: #666;
+            --success: #52c41a;
+            --warning: #faad14;
+            --danger: #ff4d4f;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: var(--light-bg);
+            color: var(--text-primary);
+        }
+
+        #app {
+            height: 100%;
+        }
+
+        /* Layout */
+        .layout {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: var(--primary);
+            color: white;
+            overflow-y: auto;
+            padding: 20px 0;
+            transition: transform 0.3s;
+        }
+
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .sidebar-user {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .sidebar-nav {
+            list-style: none;
+        }
+
+        .sidebar-nav li {
+            margin: 0;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .sidebar-nav a:hover,
+        .sidebar-nav a.active {
+            background: var(--accent);
+            color: white;
+        }
+
+        .sidebar-nav svg {
+            width: 18px;
+            height: 18px;
+            margin-right: 12px;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topbar {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .toggle-sidebar {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            display: none;
+        }
+
+        .toggle-sidebar svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            background: var(--light-bg);
+        }
+
+        /* Components */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #e55a2b;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #3ac5d5;
+        }
+
+        .btn-text {
+            background: transparent;
+            color: var(--accent);
+        }
+
+        .btn-text:hover {
+            background: rgba(255, 107, 53, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .table th {
+            background: var(--light-bg);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--primary);
+            border-bottom: 2px solid var(--border);
+        }
+
+        .table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .table tr:hover {
+            background: var(--light-bg);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .badge-success {
+            background: rgba(82, 196, 26, 0.1);
+            color: var(--success);
+        }
+
+        .badge-warning {
+            background: rgba(250, 173, 20, 0.1);
+            color: var(--warning);
+        }
+
+        .badge-danger {
+            background: rgba(255, 77, 79, 0.1);
+            color: var(--danger);
+        }
+
+        .badge-info {
+            background: rgba(77, 216, 232, 0.1);
+            color: var(--secondary);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .stat-card-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--accent);
+            margin: 10px 0;
+        }
+
+        .stat-card-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+
+        .modal-footer {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .alert-success {
+            background: rgba(82, 196, 26, 0.1);
+            color: var(--success);
+            border-left: 4px solid var(--success);
+        }
+
+        .alert-warning {
+            background: rgba(250, 173, 20, 0.1);
+            color: var(--warning);
+            border-left: 4px solid var(--warning);
+        }
+
+        .alert-danger {
+            background: rgba(255, 77, 79, 0.1);
+            color: var(--danger);
+            border-left: 4px solid var(--danger);
+        }
+
+        /* Login Page */
+        .login-container {
+            display: flex;
+            height: 100vh;
+            background: linear-gradient(135deg, var(--primary) 0%, #2a3f5f 100%);
+        }
+
+        .login-left {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .login-right {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 400px;
+            padding: 40px;
+        }
+
+        .login-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            color: var(--primary);
+            text-align: center;
+        }
+
+        .role-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .role-btn {
+            padding: 20px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .role-btn:hover,
+        .role-btn.active {
+            border-color: var(--accent);
+            background: rgba(255, 107, 53, 0.05);
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .layout {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 60px;
+                height: calc(100vh - 60px);
+                width: 250px;
+                transform: translateX(-100%);
+                z-index: 500;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .toggle-sidebar {
+                display: block;
+            }
+
+            .topbar {
+                order: -1;
+                position: sticky;
+                top: 0;
+                z-index: 100;
+            }
+
+            .main-content {
+                order: 0;
+            }
+
+            .content {
+                padding: 15px;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .role-selector {
+                grid-template-columns: 1fr;
+            }
+
+            .login-container {
+                flex-direction: column;
+            }
+
+            .login-left {
+                display: none;
+            }
+
+            .login-box {
+                max-width: 100%;
+            }
+        }
+
+        /* Utility Classes */
+        .text-center {
+            text-align: center;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .mt-20 {
+            margin-top: 20px;
+        }
+
+        .mb-20 {
+            margin-bottom: 20px;
+        }
+
+        .flex {
+            display: flex;
+            gap: 10px;
+        }
+
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .flex-col {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .gap-10 {
+            gap: 10px;
+        }
+
+        .gap-20 {
+            gap: 20px;
+        }
+
+        .w-full {
+            width: 100%;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Course Cards */
+        .course-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .course-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 4px 16px rgba(255, 107, 53, 0.15);
+        }
+
+        .course-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        .course-num {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .course-status {
+            font-size: 12px;
+        }
+
+        .course-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .course-progress {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        const { createApp, ref, reactive, computed, watch, onMounted, onUnmounted } = Vue;
+        const { createRouter, createWebHashHistory, useRouter, useRoute } = VueRouter;
+
+        // ==================== Database ====================
+        const db = new Dexie('sop_system');
+        db.version(1).stores({
+            users: 'id, empId',
+            courseProgress: '[userId+courseId], userId',
+            examRecords: '[userId+id], userId',
+            taskSubmissions: '[userId+taskId], userId',
+            mentorLogs: '[weekNum+traineeId], traineeId',
+            kpiRecords: '[userId+period], userId',
+            evaluations: '[userId+id], userId',
+            systemConfig: 'key'
+        });
+
+        // ==================== Initial Data ====================
+        const COURSES = [
+            { id: 1, title: '东南亚跨境电商基础', description: '了解东南亚市场、TikTok Shop和Shopee平台特点、女鞋品类分析', topics: ['东南亚市场概览', '平台基础认知', '女鞋品类特性', 'COD物流体系'] },
+            { id: 2, title: '商品上架与优化', description: '掌握TikTok和Shopee平台的商品上架流程、Listing优化技巧', topics: ['类目选择', '标题撰写规范', '图片拍摄标准', 'SKU与变体设置'] },
+            { id: 3, title: '平台运营规则', description: '深入了解两大平台的政策规则、违规防范、品质管理', topics: ['平台政策解读', '违规案例分析', '品质评分体系', '申诉与售后'] },
+            { id: 4, title: '数据分析与决策', description: '学会使用后台数据工具、分析关键指标、制定运营决策', topics: ['关键指标解读', '转化率优化', '数据看板', '竞品分析'] },
+            { id: 5, title: '内容营销与推广', description: '学习短视频制作、直播运营、信息流广告投放', topics: ['短视频策略', '直播话术与流程', '广告投放体系', '达人合作'] },
+            { id: 6, title: '供应链与物流', description: '了解供应链管理、物流模式、库存管理、成本控制', topics: ['采购流程', '物流选择', '库存周转', '成本预算'] },
+            { id: 7, title: '团队管理与发展', description: '运营团队的管理方法、KPI制定、人才培养、大促筹备', topics: ['KPI体系', '团队分工', '新人带教', '大促运营'] }
+        ];
+
+        const EXAMS = {
+            '实习生': [
+                { id: 1, question: 'TikTok Shop是哪家公司旗下的电商平台？', options: ['A. 阿里巴巴', 'B. 字节跳动', 'C. 腾讯', 'D. 拼多多'], correct: 1 },
+                { id: 2, question: 'Shopee的总部位于哪个国家？', options: ['A. 中国', 'B. 泰国', 'C. 新加坡', 'D. 马来西亚'], correct: 2 },
+                { id: 3, question: '以下哪个国家不属于东南亚市场？', options: ['A. 泰国', 'B. 印度尼西亚', 'C. 印度', 'D. 越南'], correct: 2 },
+                { id: 4, question: 'COD在东南亚电商中代表什么？', options: ['A. 在线支付', 'B. 货到付款', 'C. 分期付款', 'D. 信用卡支付'], correct: 1 },
+                { id: 5, question: '我们公司的主营品类是什么？', options: ['A. 美妆', 'B. 男装', 'C. 女鞋', 'D. 数码'], correct: 2 },
+                { id: 6, question: '商品上架的第一步通常是什么？', options: ['A. 设置价格', 'B. 上传图片', 'C. 选择类目', 'D. 编写描述'], correct: 2 },
+                { id: 7, question: '女鞋商品主图建议使用什么底色？', options: ['A. 红色', 'B. 黑色', 'C. 白色', 'D. 花纹背景'], correct: 2 },
+                { id: 8, question: 'SKU代表什么含义？', options: ['A. 销售数据', 'B. 库存单位', 'C. 物流编号', 'D. 广告单元'], correct: 1 },
+                { id: 9, question: '女鞋SKU变体通常按什么维度设置？', options: ['A. 重量', 'B. 尺码和颜色', 'C. 材质', 'D. 品牌'], correct: 1 },
+                { id: 10, question: '东南亚女鞋热销尺码集中在哪个范围？', options: ['A. 33-35码', 'B. 36-39码', 'C. 40-43码', 'D. 44码以上'], correct: 1 },
+                { id: 11, question: 'Shopee平台的LOGO是什么颜色？', options: ['A. 蓝色', 'B. 绿色', 'C. 橙红色', 'D. 紫色'], correct: 2 },
+                { id: 12, question: 'TikTok的核心内容形式是什么？', options: ['A. 图文', 'B. 短视频', 'C. 直播', 'D. 博客'], correct: 1 },
+                { id: 13, question: '跨境电商中"包邮"用英文怎么表达？', options: ['A. Cash On Delivery', 'B. Free Shipping', 'C. Express Mail', 'D. Same Day'], correct: 1 },
+                { id: 14, question: '商品标题的主要作用是什么？', options: ['A. 美观装饰', 'B. 搜索排名和点击率', 'C. 物流标识', 'D. 内部管理'], correct: 1 },
+                { id: 15, question: '以下哪项不是常见的东南亚电商支付方式？', options: ['A. 电子钱包', 'B. 货到付款', 'C. 银行转账', 'D. 支付宝'], correct: 3 }
+            ],
+            '运营助理': [
+                { id: 1, question: 'TikTok Shop商品上架的第一步是？', options: ['A. 上传图片', 'B. 选择类目', 'C. 设置价格', 'D. 填写标题'], correct: 1 },
+                { id: 2, question: 'Shopee商品标题的字符上限是？', options: ['A. 60字符', 'B. 80字符', 'C. 120字符', 'D. 200字符'], correct: 2 },
+                { id: 3, question: '女鞋商品主图第一张建议使用什么角度？', options: ['A. 正面平放', 'B. 白底45°角展示', 'C. 上脚图', 'D. 鞋底特写'], correct: 1 },
+                { id: 4, question: 'TikTok短视频最佳时长建议为？', options: ['A. 3-5秒', 'B. 15-60秒', 'C. 3-5分钟', 'D. 10分钟以上'], correct: 1 },
+                { id: 5, question: 'Shopee的官方跨境物流服务缩写是？', options: ['A. FBA', 'B. SLS', 'C. DHL', 'D. EMS'], correct: 1 },
+                { id: 6, question: '以下哪项不是Shopee搜索排名的影响因素？', options: ['A. 关键词相关度', 'B. 销量和好评率', 'C. 卖家年龄', 'D. 价格竞争力'], correct: 2 },
+                { id: 7, question: '女鞋商品SKU设置中，热销尺码范围是？', options: ['A. 33-35码', 'B. 36-39码', 'C. 40-42码', 'D. 43-45码'], correct: 1 },
+                { id: 8, question: '商品Listing优化中，权重最高的元素是？', options: ['A. 商品描述', 'B. 商品标题', 'C. 商品图片', 'D. 商品价格'], correct: 1 },
+                { id: 9, question: '女鞋定价时，售价建议至少是采购成本的几倍？', options: ['A. 1.5倍', 'B. 2倍', 'C. 3倍', 'D. 5倍'], correct: 2 },
+                { id: 10, question: '上架女鞋图片不允许包含以下哪项？', options: ['A. 产品正面图', 'B. 真人上脚图', 'C. 其他平台水印', 'D. 尺码标注'], correct: 2 },
+                { id: 11, question: 'Shopee新卖家免佣金扶持期通常为？', options: ['A. 30天', 'B. 60天', 'C. 90天', 'D. 180天'], correct: 2 },
+                { id: 12, question: '女鞋的产品描述应优先包含什么信息？', options: ['A. 公司介绍', 'B. 尺码对照表和材质说明', 'C. 付款方式', 'D. 品牌故事'], correct: 1 },
+                { id: 13, question: 'TikTok商品类目路径，女鞋应选择？', options: ['A. 家居 > 鞋', 'B. 女装与女性配饰 > 女鞋', 'C. 运动 > 鞋', 'D. 美妆 > 配饰'], correct: 1 },
+                { id: 14, question: 'Shopee"关注礼"功能的作用是？', options: ['A. 提高客单价', 'B. 增加店铺粉丝', 'C. 提升搜索排名', 'D. 降低退货率'], correct: 1 },
+                { id: 15, question: '一双女鞋成本25元，国际运费15元，平台佣金6%，泰铢汇率5:1，合理售价约为？', options: ['A. 99泰铢', 'B. 199泰铢', 'C. 299-350泰铢', 'D. 500泰铢以上'], correct: 2 },
+                { id: 16, question: '女鞋商品主图需要上传几张图片？', options: ['A. 1-2张', 'B. 3-5张', 'C. 5-9张', 'D. 10张以上'], correct: 2 },
+                { id: 17, question: 'Shopee的聊天回复率考核要求是？', options: ['A. >80%', 'B. >90%', 'C. >95%', 'D. >98%'], correct: 2 },
+                { id: 18, question: 'TikTok直播中"引流款"的作用是？', options: ['A. 提高利润', 'B. 吸引观众留在直播间', 'C. 清库存', 'D. 品牌推广'], correct: 1 },
+                { id: 19, question: '女鞋标题中以下哪种写法更规范？', options: ['A. 好看的鞋子超便宜', 'B. 女士凉鞋 夏季新款 粗跟 一字带 真皮', 'C. !!!爆款凉鞋全网最低价!!!', 'D. AAAAA级女鞋'], correct: 1 },
+                { id: 20, question: 'COD在东南亚电商中的含义是？', options: ['A. 线上支付', 'B. 货到付款', 'C. 信用卡', 'D. 分期付款'], correct: 1 }
+            ],
+            '运营专员': [
+                { id: 1, question: 'TikTok Shop商品上架的第一步是？', options: ['A. 上传图片', 'B. 选择类目', 'C. 设置价格', 'D. 填写标题'], correct: 1 },
+                { id: 2, question: 'Shopee搜索广告的竞价模式是？', options: ['A. CPM', 'B. CPC', 'C. CPA', 'D. CPV'], correct: 1 },
+                { id: 3, question: 'TikTok Spark Ads的核心优势是？', options: ['A. 搜索竞价', 'B. 加热原生内容', 'C. 弹窗广告', 'D. 邮件投放'], correct: 1 },
+                { id: 4, question: '女鞋商品的ACoS为25%，意味着什么？', options: ['A. 每卖100元花25元广告费', 'B. 利润率25%', 'C. 转化率25%', 'D. 点击率25%'], correct: 0 },
+                { id: 5, question: 'Shopee大促活动一般需要提前多久报名？', options: ['A. 7天', 'B. 15天', 'C. 30-45天', 'D. 90天'], correct: 2 },
+                { id: 6, question: 'TikTok短视频完播率多少以上算优秀？', options: ['A. 10%', 'B. 20%', 'C. 30%', 'D. 50%'], correct: 2 },
+                { id: 7, question: '以下哪种女鞋选品策略最适合东南亚市场？', options: ['A. 重型长靴', 'B. 轻便凉鞋和拖鞋', 'C. 滑雪靴', 'D. 高筒皮靴'], correct: 1 },
+                { id: 8, question: 'Shopee的ROAS表示什么？', options: ['A. 广告支出回报率', 'B. 退货率', 'C. 点击成本', 'D. 库存周转率'], correct: 0 },
+                { id: 9, question: '女鞋直播中"福利款"的定价策略通常是？', options: ['A. 高于正常售价', 'B. 成本价或微亏', 'C. 不设价格', 'D. 翻倍定价'], correct: 1 },
+                { id: 10, question: '跨境女鞋的退货主要原因是？', options: ['A. 物流慢', 'B. 尺码不合适', 'C. 颜色不喜欢', 'D. 价格太贵'], correct: 1 },
+                { id: 11, question: 'TikTok内容营销中，女鞋类最有效的视频类型是？', options: ['A. 纯产品展示', 'B. 穿搭教程+上脚展示', 'C. 工厂生产过程', 'D. 价格对比'], correct: 1 },
+                { id: 12, question: 'Shopee关键词广告优化的核心指标是？', options: ['A. 曝光量', 'B. CTR和CVR', 'C. 粉丝数', 'D. 聊天回复率'], correct: 1 },
+                { id: 13, question: '海外仓模式相比直发的主要优势是？', options: ['A. 成本更低', 'B. 时效更快', 'C. 无需备货', 'D. 零风险'], correct: 1 },
+                { id: 14, question: '女鞋定价时的"三段定价法"指的是？', options: ['A. 引流款+利润款+形象款', 'B. 低中高价', 'C. 批发+零售+促销', 'D. 国内+国际+平台'], correct: 0 },
+                { id: 15, question: '数据分析中，漏斗模型的正确顺序是？', options: ['A. 成交>加购>浏览', 'B. 浏览>点击>加购>成交', 'C. 成交>点击>浏览', 'D. 加购>浏览>成交'], correct: 1 },
+                { id: 16, question: 'Shopee Flash Sale的参与条件通常要求？', options: ['A. 商品评分≥4.0', 'B. 开店满1年', 'C. 粉丝过万', 'D. 库存≥100'], correct: 0 },
+                { id: 17, question: 'TikTok广告新手建议的日预算起步是？', options: ['A. $5-10', 'B. $20-50', 'C. $100-200', 'D. $500以上'], correct: 1 },
+                { id: 18, question: '以下哪种物流模式时效最快？', options: ['A. 邮政小包', 'B. 平台官方物流', 'C. 海外仓', 'D. 专线物流'], correct: 2 },
+                { id: 19, question: '店铺DSR评分低于多少会影响流量分配？', options: ['A. 4.8', 'B. 4.5', 'C. 4.0', 'D. 3.5'], correct: 2 },
+                { id: 20, question: '女鞋季节性选品中，Q4（10-12月）应重点备货？', options: ['A. 凉鞋', 'B. 人字拖', 'C. 短靴和节日款', 'D. 沙滩鞋'], correct: 2 }
+            ],
+            '运营组长': [
+                { id: 1, question: '团队KPI制定中，SMART原则的S代表什么？', options: ['A. Simple', 'B. Specific', 'C. Standard', 'D. Strategic'], correct: 1 },
+                { id: 2, question: '女鞋品类的合理库存周转天数应控制在？', options: ['A. 7天以内', 'B. 15-30天', 'C. 60-90天', 'D. 120天以上'], correct: 1 },
+                { id: 3, question: '当TikTok和Shopee同款女鞋出现价格冲突时，正确做法是？', options: ['A. 统一最低价', 'B. 差异化定价策略', 'C. 下架其中一个', 'D. 不管'], correct: 1 },
+                { id: 4, question: '团队成员上架的女鞋Listing质量参差不齐，最有效的解决方案是？', options: ['A. 逐个检查修改', 'B. 建立标准SOP和审核机制', 'C. 更换团队成员', 'D. 降低标准'], correct: 1 },
+                { id: 5, question: '女鞋新品开发周期中，从选品到上架的合理时间是？', options: ['A. 1天', 'B. 3-5天', 'C. 15-20天', 'D. 30天以上'], correct: 1 },
+                { id: 6, question: '月度运营复盘会议应重点关注的核心数据是？', options: ['A. 粉丝增长数', 'B. GMV、利润率、ROI', 'C. 直播间人数', 'D. 商品上新数量'], correct: 1 },
+                { id: 7, question: '当团队出现多平台运营资源冲突时，优先级排序的依据是？', options: ['A. 个人喜好', 'B. ROI和增长潜力', 'C. 平台知名度', 'D. 老板要求'], correct: 1 },
+                { id: 8, question: '女鞋库存滞销（超过60天无动销），应采取的措施优先级是？', options: ['A. 继续等待', 'B. 降价促销>捆绑销售>清仓处理', 'C. 直接丢弃', 'D. 转内销'], correct: 1 },
+                { id: 9, question: '跨平台比价分析的合理频率是？', options: ['A. 每天', 'B. 每周1-2次', 'C. 每月1次', 'D. 每季度1次'], correct: 1 },
+                { id: 10, question: '团队效率提升中，以下哪项投入产出比最高？', options: ['A. 加人', 'B. 建立自动化工具和模板', 'C. 延长工作时间', 'D. 减少品类'], correct: 1 },
+                { id: 11, question: '女鞋爆款打造的核心逻辑是？', options: ['A. 低价引流', 'B. 测品>优化>放量>维护的完整链路', 'C. 大量铺货', 'D. 只做广告'], correct: 1 },
+                { id: 12, question: '运营组长在大促前需要提前多久开始筹备？', options: ['A. 1周', 'B. 2-3周', 'C. 4-6周', 'D. 3个月'], correct: 2 },
+                { id: 13, question: '团队日报/周报的核心价值是？', options: ['A. 监督考勤', 'B. 数据追踪和问题发现', 'C. 形式主义', 'D. 给老板看'], correct: 1 },
+                { id: 14, question: '当新人运营上架的女鞋连续被平台驳回，应如何处理？', options: ['A. 批评处罚', 'B. 排查原因+补充培训+陪练', 'C. 替他做', 'D. 让他自己研究'], correct: 1 },
+                { id: 15, question: '跨境女鞋的选品会议，理想参与人员应包括？', options: ['A. 只有运营', 'B. 运营+采购+美工', 'C. 全公司', 'D. 只有老板'], correct: 1 }
+            ],
+            '运营主管': [
+                { id: 1, question: '运营主管在审核下属提交的女鞋Listing时，首先应检查什么？', options: ['A. 有没有错别字', 'B. 类目是否正确、标题关键词是否合理', 'C. 图片好不好看', 'D. 价格高不高'], correct: 1 },
+                { id: 2, question: '月度运营复盘会上，主管应重点关注哪组数据？', options: ['A. 粉丝增长数', 'B. GMV达成率、转化率、广告ROI对比上月变化', 'C. 每个人的出勤率', 'D. 上新数量排名'], correct: 1 },
+                { id: 3, question: '你发现某组长负责的店铺转化率连续2周下降，正确处理方式是？', options: ['A. 直接批评', 'B. 与组长一起分析数据，定位问题并制定改善计划', 'C. 不管，等等看', 'D. 自己接手处理'], correct: 1 },
+                { id: 4, question: '多平台运营中，TikTok和Shopee同款女鞋出现价格冲突，正确做法是？', options: ['A. 统一最低价', 'B. 根据平台特性差异化定价', 'C. 随便定', 'D. 全部涨价'], correct: 1 },
+                { id: 5, question: '女鞋月度广告预算5万元，TikTok和Shopee的分配依据应该是？', options: ['A. 各一半', 'B. 根据各平台ROI和增长阶段动态分配', 'C. 全给TikTok', 'D. 全给Shopee'], correct: 1 },
+                { id: 6, question: '团队周会上，以下哪种汇报格式最有效？', options: ['A. 纯文字叙述', 'B. 数据看板+问题+解决方案+下周计划', 'C. 只看销售额', 'D. 口头汇报即可'], correct: 1 },
+                { id: 7, question: '当新人连续3天上架的女鞋被平台驳回，主管应该？', options: ['A. 辞退新人', 'B. 排查驳回原因，安排组长带教并更新SOP', 'C. 让他自己研究', 'D. 忽略不管'], correct: 1 },
+                { id: 8, question: 'Shopee大促前4周，主管需要确认的核心事项不包括？', options: ['A. 库存备货量', 'B. 活动报名状态', 'C. 员工的午餐安排', 'D. 广告预算和素材准备'], correct: 2 },
+                { id: 9, question: '女鞋爆款凉鞋突然出现差评集中（尺码偏小），主管首先应该？', options: ['A. 删差评', 'B. 立即联系供应商核实+暂停推广+准备客服话术', 'C. 不处理等自然消退', 'D. 全部下架'], correct: 1 },
+                { id: 10, question: '制定团队月度KPI时，以下哪组指标组合最合理？', options: ['A. 只看GMV', 'B. GMV+利润率+上新数+转化率+客服响应率', 'C. 只看上架数量', 'D. 只看广告花费'], correct: 1 },
+                { id: 11, question: '运营主管在跨平台协调中，发现TikTok组和Shopee组的选品重复度过高，应该？', options: ['A. 不管', 'B. 建立统一选品会机制，根据平台特性差异化选品', 'C. 合并两个组', 'D. 各做各的'], correct: 1 },
+                { id: 12, question: '店铺DSR评分从4.6降到4.2，主管应该优先排查？', options: ['A. 商品描述', 'B. 近30天差评内容和退货原因分析', 'C. 店铺装修', 'D. 粉丝数量'], correct: 1 },
+                { id: 13, question: '当月广告ACoS超出预算目标20%时，主管的正确决策是？', options: ['A. 立即全部停投', 'B. 分析各广告计划ROI，暂停低效计划，优化高潜力计划', 'C. 继续投不管', 'D. 加倍预算'], correct: 1 },
+                { id: 14, question: '管理3个运营组时，每周最少应进行几次关键数据检查？', options: ['A. 0次，月底看就行', 'B. 1次', 'C. 每日核心数据+每周深度分析', 'D. 每季度1次'], correct: 2 },
+                { id: 15, question: '下属提出希望尝试新的女鞋品类（如运动鞋），主管应该？', options: ['A. 直接否决', 'B. 要求提供市场调研和可行性分析再决策', 'C. 马上同意', 'D. 让他自己决定'], correct: 1 }
+            ]
+        };
+
+        const TASKS = [
+            { id: 1, courseId: 1, title: '学习东南亚市场概况', description: '研究泰国、印尼、越南等目标市场的消费特性和女鞋需求', points: 15 },
+            { id: 2, courseId: 1, title: '完成平台基础认知测试', description: '通过TikTok Shop和Shopee的基础知识考核', points: 10 },
+            { id: 3, courseId: 2, title: '完成第一次商品上架练习', description: '在测试账户上上架1款女鞋，完整操作从类目到价格设置', points: 20 },
+            { id: 4, courseId: 2, title: '撰写5个女鞋商品标题', description: '按照规范撰写TikTok和Shopee平台的标题示例', points: 15 },
+            { id: 5, courseId: 3, title: '学习平台违规案例分析', description: '研究并总结5个女鞋类目的违规案例及解决办法', points: 15 },
+            { id: 6, courseId: 3, title: '品质评分体系学习', description: '熟悉DSR评分、退货率、响应率等关键指标', points: 10 },
+            { id: 7, courseId: 4, title: '数据指标分析报告', description: '分析一个爆款女鞋的浏览、转化、销售数据链条', points: 20 },
+            { id: 8, courseId: 4, title: '竞品分析作业', description: '选择3款竞品女鞋，对比Listing、价格、销量数据', points: 20 },
+            { id: 9, courseId: 5, title: '观看短视频创意案例', description: '分析5个优秀女鞋短视频的制作思路和转化效果', points: 15 },
+            { id: 10, courseId: 5, title: '直播脚本撰写练习', description: '为一款女鞋产品撰写30分钟直播的话术脚本', points: 20 },
+            { id: 11, courseId: 6, title: '成本核算练习', description: '完成一款女鞋的成本核算（物料+运费+佣金计算）', points: 15 },
+            { id: 12, courseId: 6, title: '库存管理方案制定', description: '针对5款女鞋制定库存周转目标和风险预案', points: 20 },
+            { id: 13, courseId: 7, title: '完成在线考试（岗位对应级别）', description: '参加岗位对应的分级在线考试并达成通过分数', points: 30 },
+            { id: 14, courseId: 7, title: '职业发展规划', description: '制定个人在跨境电商运营岗位的1年成长计划', points: 20 }
+        ];
+
+        const DEFAULT_TASK_STATUS_MAP = {
+            1: '待完成',
+            2: '待完成',
+            3: '已提交',
+            4: '已评分',
+            5: '待完成',
+            6: '已评分',
+            7: '已提交'
+        };
+
+        // ==================== Login Component ====================
+        const LoginView = {
+            template: `
+                <div class="login-container">
+                    <div class="login-left">
+                        <div>
+                            <h1 style="font-size: 48px; margin-bottom: 20px;">SOP管理系统</h1>
+                            <p style="font-size: 18px; opacity: 0.9;">全流程数字化管理新人入职</p>
+                        </div>
+                    </div>
+                    <div class="login-right">
+                        <div class="login-box">
+                            <div class="login-title">登 录</div>
+                            <div class="form-group">
+                                <label class="form-label">姓名</label>
+                                <input v-model="form.name" class="form-input" type="text" placeholder="请输入您的姓名">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">工号</label>
+                                <input v-model="form.empId" class="form-input" type="text" placeholder="请输入您的工号">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">选择角色</label>
+                                <div class="role-selector">
+                                    <button
+                                        class="role-btn"
+                                        :class="{ active: form.role === 'admin' }"
+                                        @click="form.role = 'admin'">
+                                        管理员
+                                    </button>
+                                    <button
+                                        class="role-btn"
+                                        :class="{ active: form.role === 'mentor' }"
+                                        @click="form.role = 'mentor'">
+                                        带教人
+                                    </button>
+                                    <button
+                                        class="role-btn"
+                                        :class="{ active: form.role === 'trainee' }"
+                                        @click="form.role = 'trainee'">
+                                        新人
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label style="display: flex; align-items: center;">
+                                    <input type="checkbox" v-model="form.remember" style="margin-right: 8px;">
+                                    <span>记住我</span>
+                                </label>
+                            </div>
+                            <button @click="handleLogin" class="btn btn-primary w-full" style="font-size: 16px; padding: 12px;">登 录</button>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const router = useRouter();
+                const form = reactive({
+                    name: localStorage.getItem('lastUser') ? JSON.parse(localStorage.getItem('lastUser')).name : '',
+                    empId: localStorage.getItem('lastUser') ? JSON.parse(localStorage.getItem('lastUser')).empId : '',
+                    role: localStorage.getItem('lastUser') ? JSON.parse(localStorage.getItem('lastUser')).role : 'trainee',
+                    remember: !!localStorage.getItem('lastUser')
+                });
+
+                const handleLogin = async () => {
+                    if (!form.name || !form.empId) {
+                        alert('请输入姓名和工号');
+                        return;
+                    }
+
+                    const user = {
+                        id: Date.now(),
+                        name: form.name,
+                        empId: form.empId,
+                        role: form.role,
+                        joinDate: new Date().toISOString()
+                    };
+
+                    if (form.remember) {
+                        localStorage.setItem('lastUser', JSON.stringify(user));
+                    } else {
+                        localStorage.removeItem('lastUser');
+                    }
+
+                    sessionStorage.setItem('currentUser', JSON.stringify(user));
+                    router.push('/dashboard');
+                };
+
+                return {
+                    form,
+                    handleLogin
+                };
+            }
+        };
+
+        // ==================== Dashboard Component ====================
+        const DashboardView = {
+            template: `
+                <div>
+                    <div class="flex-between" style="margin-bottom: 20px;">
+                        <h1>仪表盘</h1>
+                    </div>
+
+                    <div v-if="userRole === 'admin'" class="admin-dashboard">
+                        <div class="grid">
+                            <div class="stat-card">
+                                <div class="stat-card-label">团队总人数</div>
+                                <div class="stat-card-value">{{ stats.totalUsers }}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-card-label">在培人数</div>
+                                <div class="stat-card-value">{{ stats.inTraining }}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-card-label">本月转正</div>
+                                <div class="stat-card-value">{{ stats.confirmThisMonth }}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-card-label">考试通过率</div>
+                                <div class="stat-card-value">{{ stats.passRate }}%</div>
+                            </div>
+                        </div>
+
+                        <div class="grid">
+                            <div class="card" style="grid-column: 1 / -1;">
+                                <div class="card-title">学习进度分布</div>
+                                <canvas id="progressChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="grid">
+                            <div class="card">
+                                <div class="card-title">近7天活跃度</div>
+                                <canvas id="activityChart"></canvas>
+                            </div>
+                            <div class="card">
+                                <div class="card-title">待审批事项</div>
+                                <div style="padding: 20px;">
+                                    <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border);">
+                                        <div style="font-weight: 600;">张三 - 转正评估审批</div>
+                                        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">等待2天</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 600;">李四 - 考试成绩复议</div>
+                                        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">等待1天</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-else-if="userRole === 'mentor'" class="mentor-dashboard">
+                        <div class="grid">
+                            <div class="stat-card">
+                                <div class="stat-card-label">我的学员数</div>
+                                <div class="stat-card-value">{{ stats.myTraineeCount }}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-card-label">待评分任务</div>
+                                <div class="stat-card-value">{{ stats.pendingScoreTasks }}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-card-label">本周跟踪完成</div>
+                                <div class="stat-card-value">{{ stats.weeklyCheckDone }}</div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-title">我的学员进度</div>
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>学员姓名</th>
+                                        <th>岗位</th>
+                                        <th>课程完成</th>
+                                        <th>考试成绩</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="trainee in mentorTrainees" :key="trainee.id">
+                                        <td>{{ trainee.name }}</td>
+                                        <td>销售代表</td>
+                                        <td>{{ trainee.courseProgress }}/7</td>
+                                        <td>{{ trainee.examScore || '-' }}</td>
+                                        <td>
+                                            <button class="btn btn-text" style="font-size: 12px;">查看详情</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div v-else class="trainee-dashboard">
+                        <div class="grid">
+                            <div class="stat-card">
+                                <div class="stat-card-label">课程进度</div>
+                                <div class="stat-card-value">{{ stats.myProgress }}/7</div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" :style="{ width: (stats.myProgress / 7 * 100) + '%' }"></div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-card-label">考试成绩</div>
+                                <div class="stat-card-value" :style="{ color: stats.myExamScore >= 60 ? 'var(--success)' : 'var(--danger)' }">
+                                    {{ stats.myExamScore || '-' }}
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-card-label">距转正</div>
+                                <div class="stat-card-value">{{ stats.daysToConfirm }}</div>
+                                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">天</div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-title">下一个任务</div>
+                            <div v-if="nextTask" style="padding: 20px;">
+                                <h3 style="margin-bottom: 10px;">{{ nextTask.title }}</h3>
+                                <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 15px;">{{ nextTask.description }}</p>
+                                <button class="btn btn-primary" @click="goToTask(nextTask.id)">开始任务</button>
+                            </div>
+                            <div v-else style="padding: 20px; text-align: center; color: var(--text-secondary);">
+                                所有任务已完成！
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const router = useRouter();
+                const userRole = computed(() => {
+                    const user = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                    return user.role || 'trainee';
+                });
+
+                const stats = reactive({
+                    totalUsers: 24,
+                    inTraining: 8,
+                    confirmThisMonth: 3,
+                    passRate: 92,
+                    myTraineeCount: 5,
+                    pendingScoreTasks: 3,
+                    weeklyCheckDone: 2,
+                    myProgress: 3,
+                    myExamScore: 85,
+                    daysToConfirm: 28
+                });
+
+                const mentorTrainees = ref([
+                    { id: 1, name: '张三', courseProgress: 5, examScore: 88 },
+                    { id: 2, name: '李四', courseProgress: 3, examScore: null },
+                    { id: 3, name: '王五', courseProgress: 7, examScore: 92 }
+                ]);
+
+                const nextTask = ref(TASKS[2]);
+
+                const goToTask = (taskId) => {
+                    router.push(`/tasks/${taskId}`);
+                };
+
+                onMounted(() => {
+                    setTimeout(() => {
+                        if (document.getElementById('progressChart')) {
+                            new Chart(document.getElementById('progressChart'), {
+                                type: 'doughnut',
+                                data: {
+                                    labels: ['已完成', '进行中', '未开始'],
+                                    datasets: [{
+                                        data: [12, 8, 4],
+                                        backgroundColor: ['#52c41a', '#faad14', '#ff4d4f']
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    plugins: { legend: { position: 'bottom' } }
+                                }
+                            });
+                        }
+
+                        if (document.getElementById('activityChart')) {
+                            new Chart(document.getElementById('activityChart'), {
+                                type: 'line',
+                                data: {
+                                    labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+                                    datasets: [{
+                                        label: '活跃人数',
+                                        data: [12, 19, 8, 15, 10, 5, 3],
+                                        borderColor: '#FF6B35',
+                                        backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                                        tension: 0.4
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    plugins: { legend: { display: false } }
+                                }
+                            });
+                        }
+                    }, 100);
+                });
+
+                return {
+                    userRole,
+                    stats,
+                    mentorTrainees,
+                    nextTask,
+                    goToTask
+                };
+            }
+        };
+
+        // ==================== Courses Component ====================
+        const CoursesView = {
+            template: `
+                <div>
+                    <div class="flex-between" style="margin-bottom: 20px;">
+                        <h1>培训中心</h1>
+                        <div v-if="isAdmin" class="flex">
+                            <button class="btn btn-primary" @click="showAddCourseModal = true">+ 添加课程</button>
+                        </div>
+                    </div>
+
+                    <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+                        <div v-for="course in courses" :key="course.id" class="course-card" @click="goCourseDetail(course.id)">
+                            <div class="course-header">
+                                <div class="course-num">第{{ course.id }}课</div>
+                                <span class="badge" :class="getCourseStatusClass(course.id)">
+                                    {{ getCourseStatus(course.id) }}
+                                </span>
+                            </div>
+                            <div class="course-title">{{ course.title }}</div>
+                            <p style="font-size: 13px; color: var(--text-secondary);">{{ course.description }}</p>
+                            <div class="course-progress">
+                                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">进度</div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" :style="{ width: getCourseProgress(course.id) + '%' }"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const router = useRouter();
+                const isAdmin = computed(() => {
+                    const user = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                    return user.role === 'admin';
+                });
+
+                const courses = ref(COURSES);
+                const showAddCourseModal = ref(false);
+                const courseProgressMap = reactive({});
+
+                const getCourseProgress = (courseId) => {
+                    return courseProgressMap[courseId] || 0;
+                };
+
+                const getCourseStatus = (courseId) => {
+                    const progress = getCourseProgress(courseId);
+                    if (progress === 0) return '未开始';
+                    if (progress === 100) return '已完成';
+                    return '学习中';
+                };
+
+                const getCourseStatusClass = (courseId) => {
+                    const status = getCourseStatus(courseId);
+                    if (status === '已完成') return 'badge-success';
+                    if (status === '学习中') return 'badge-warning';
+                    return 'badge-info';
+                };
+
+                const goCourseDetail = (courseId) => {
+                    router.push(`/courses/${courseId}`);
+                };
+
+                onMounted(() => {
+                    // Initialize course progress
+                    courses.value.forEach((course, index) => {
+                        courseProgressMap[course.id] = [0, 30, 60, 100, 0, 15, 45][index];
+                    });
+                });
+
+                return {
+                    courses,
+                    isAdmin,
+                    showAddCourseModal,
+                    getCourseProgress,
+                    getCourseStatus,
+                    getCourseStatusClass,
+                    goCourseDetail
+                };
+            }
+        };
+
+        // ==================== Course Detail Component ====================
+        const CourseDetailView = {
+            template: `
+                <div>
+                    <div class="flex-between" style="margin-bottom: 20px;">
+                        <div>
+                            <button class="btn btn-text" @click="goBack" style="margin-bottom: 10px;">← 返回</button>
+                            <h1>{{ course.title }}</h1>
+                        </div>
+                        <div v-if="!isCompleted" class="flex">
+                            <button class="btn btn-primary" @click="markAsComplete">标记为已完成</button>
+                        </div>
+                    </div>
+
+                    <div class="grid" style="grid-template-columns: 1fr 350px;">
+                        <div>
+                            <div class="card">
+                                <div class="card-title">学习要点</div>
+                                <ul style="list-style: none; padding: 0;">
+                                    <li v-for="(topic, index) in course.topics" :key="index" style="padding: 10px 0; border-bottom: 1px solid var(--border);">
+                                        <input type="checkbox" :id="'topic-' + index" style="margin-right: 8px;">
+                                        <label :for="'topic-' + index" style="cursor: pointer;">{{ topic }}</label>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-title">课程内容</div>
+                                <div style="line-height: 1.8; color: var(--text-secondary); font-size: 14px;">
+                                    <p>本课程详细讲解了{{ course.title }}的各个方面，通过理论讲解、案例分析、实际操作相结合的方式，帮助新员工快速掌握相关知识和技能。</p>
+                                    <p>课程包含以下内容：</p>
+                                    <ul>
+                                        <li v-for="(topic, index) in course.topics" :key="index">{{ topic }}</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-title">关键知识点</div>
+                                <div style="padding: 20px; background: var(--light-bg); border-radius: 6px; font-size: 14px; line-height: 1.8;">
+                                    <p>1. 掌握基本概念：理解{{ course.title }}的核心概念和原理</p>
+                                    <p>2. 学会应用：在实际工作中灵活运用所学知识</p>
+                                    <p>3. 形成习惯：建立良好的工作习惯和标准流程</p>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-title">相关资源</div>
+                                <div style="padding: 20px;">
+                                    <div style="margin-bottom: 15px;">
+                                        <a href="#" style="color: var(--accent); text-decoration: none; font-weight: 600;">
+                                            📥 {{ course.title }}-完整PPT.pdf
+                                        </a>
+                                    </div>
+                                    <div style="margin-bottom: 15px;">
+                                        <a href="#" style="color: var(--accent); text-decoration: none; font-weight: 600;">
+                                            📥 学习笔记模板.docx
+                                        </a>
+                                    </div>
+                                    <div>
+                                        <a href="#" style="color: var(--accent); text-decoration: none; font-weight: 600;">
+                                            📥 相关视频教程.mp4
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="card">
+                                <div class="card-title">学习进度</div>
+                                <div style="padding: 20px; text-align: center;">
+                                    <div style="font-size: 48px; font-weight: 700; color: var(--accent); margin-bottom: 10px;">{{ progress }}%</div>
+                                    <div class="progress-bar" style="margin-bottom: 20px;">
+                                        <div class="progress-fill" :style="{ width: progress + '%' }"></div>
+                                    </div>
+                                    <div style="font-size: 12px; color: var(--text-secondary);">
+                                        预计完成时间：2小时
+                                    </div>
+                                </div>
+                                <div style="padding-top: 20px; border-top: 1px solid var(--border);">
+                                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">开始时间</div>
+                                    <div style="font-size: 14px; font-weight: 600; margin-bottom: 15px;">2024-01-15</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">完成时间</div>
+                                    <div v-if="isCompleted" style="font-size: 14px; font-weight: 600;">2024-01-18</div>
+                                    <div v-else style="font-size: 14px; color: var(--text-secondary);">进行中...</div>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-title">相关任务</div>
+                                <div style="padding: 20px;">
+                                    <div v-for="task in relatedTasks" :key="task.id" style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border);">
+                                        <div style="font-weight: 600; font-size: 14px; margin-bottom: 5px;">{{ task.title }}</div>
+                                        <div style="font-size: 12px; color: var(--text-secondary);">{{ task.description }}</div>
+                                        <div style="font-size: 12px; color: var(--accent); margin-top: 5px; font-weight: 600;">+ {{ task.points }}分</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const router = useRouter();
+                const route = useRoute();
+                const courseId = parseInt(route.params.id);
+                const course = ref(COURSES.find(c => c.id === courseId));
+                const progress = ref(60);
+                const isCompleted = ref(false);
+
+                const relatedTasks = computed(() => {
+                    return TASKS.filter(t => t.courseId === courseId).slice(0, 3);
+                });
+
+                const goBack = () => {
+                    router.push('/courses');
+                };
+
+                const markAsComplete = () => {
+                    isCompleted.value = true;
+                    progress.value = 100;
+                    alert('课程已标记为完成！');
+                };
+
+                return {
+                    course,
+                    progress,
+                    isCompleted,
+                    relatedTasks,
+                    goBack,
+                    markAsComplete
+                };
+            }
+        };
+
+        // ==================== Exam Component ====================
+        const ExamView = {
+            template: `
+                <div>
+                    <h1 style="margin-bottom: 20px;">在线考试</h1>
+
+                    <div v-if="!examStarted" class="card">
+                        <div class="card-title">东南亚跨境电商女鞋运营 - 分岗位考试</div>
+                        <div style="padding: 20px;">
+                            <p style="margin-bottom: 25px; color: var(--text-secondary); line-height: 1.6;">请根据您的岗位选择对应试卷。每个岗位的考试难度和题型均有所不同，考试成绩需达到60分以上为通过。</p>
+                            <div class="flex-col gap-12">
+                                <div
+                                    v-for="role in roles"
+                                    :key="role"
+                                    style="border: 1px solid var(--border); border-radius: 6px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; justify-content: space-between; align-items: center;"
+                                    @click="startExam(role)"
+                                    @mouseover="$event.currentTarget.style.backgroundColor = 'var(--light-bg)'"
+                                    @mouseout="$event.currentTarget.style.backgroundColor = 'transparent'">
+                                    <div>
+                                        <div style="font-weight: 600; margin-bottom: 4px;">{{ role }}</div>
+                                        <div style="font-size: 13px; color: var(--text-secondary);">{{ getRoleDescription(role) }}</div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <div style="font-size: 12px; color: var(--text-secondary);">{{ getRoleQuestionCount(role) }}题</div>
+                                        <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">{{ getRoleTime(role) }}分钟</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-else-if="!examFinished" class="card">
+                        <div class="card-title">{{ selectedRole }} - 试卷 ({{ currentQuestionIndex + 1 }}/{{ questions.length }})</div>
+                        <div style="padding: 20px;">
+                            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+                                <h3 style="margin-bottom: 15px;">{{ currentQuestion.question }}</h3>
+                                <div class="flex-col gap-10">
+                                    <label v-for="(option, index) in currentQuestion.options" :key="index" style="display: flex; align-items: center; cursor: pointer;">
+                                        <input
+                                            type="radio"
+                                            :value="index"
+                                            v-model.number="answers[currentQuestionIndex]"
+                                            style="margin-right: 10px;">
+                                        <span>{{ option }}</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="flex-between">
+                                <button
+                                    @click="previousQuestion"
+                                    class="btn btn-text"
+                                    :disabled="currentQuestionIndex === 0">
+                                    ← 上一题
+                                </button>
+                                <div>
+                                    <span style="color: var(--text-secondary); font-size: 12px;">{{ currentQuestionIndex + 1 }}/{{ questions.length }}</span>
+                                </div>
+                                <button
+                                    @click="nextOrFinish"
+                                    class="btn btn-primary">
+                                    {{ currentQuestionIndex === questions.length - 1 ? '提交答卷' : '下一题' }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-else class="card" style="max-width: 600px;">
+                        <div class="card-title text-center">考试完成</div>
+                        <div style="padding: 40px; text-align: center;">
+                            <div style="font-size: 48px; font-weight: 700; color: var(--accent); margin-bottom: 10px;">{{ examScore }}</div>
+                            <div style="font-size: 18px; font-weight: 600; margin-bottom: 30px;">
+                                <span v-if="examScore >= 60" style="color: var(--success);">恭喜！您已通过考试</span>
+                                <span v-else style="color: var(--danger);">遗憾，您未通过本次考试</span>
+                            </div>
+                            <div style="background: var(--light-bg); padding: 20px; border-radius: 6px; margin-bottom: 20px;">
+                                <div style="margin-bottom: 10px;">
+                                    <span style="color: var(--text-secondary); font-size: 14px;">正确率:</span>
+                                    <span style="font-weight: 600; margin-left: 10px;">{{ Math.round(examScore / 100 * questions.length) }}/{{ questions.length }}</span>
+                                </div>
+                                <div>
+                                    <span style="color: var(--text-secondary); font-size: 14px;">考试用时:</span>
+                                    <span style="font-weight: 600; margin-left: 10px;">{{ examTime }}秒</span>
+                                </div>
+                            </div>
+                            <div class="flex gap-10" style="justify-content: center;">
+                                <button @click="resetExam" class="btn btn-text">返回首页</button>
+                                <button @click="restartExam" class="btn btn-primary">重新考试</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const router = useRouter();
+                const roles = ref(['实习生', '运营助理', '运营专员', '运营组长', '运营主管']);
+                const selectedRole = ref('');
+                const questions = ref([]);
+                const currentQuestionIndex = ref(0);
+                const answers = ref([]);
+                const examStarted = ref(false);
+                const examFinished = ref(false);
+                const examScore = ref(0);
+                const examTime = ref(0);
+                const startTime = ref(0);
+
+                const currentQuestion = computed(() => {
+                    return questions.value[currentQuestionIndex.value] || {};
+                });
+
+                const startExam = (role) => {
+                    selectedRole.value = role;
+                    questions.value = EXAMS[role] || [];
+                    answers.value = new Array(questions.value.length).fill(-1);
+                    currentQuestionIndex.value = 0;
+                    examStarted.value = true;
+                    examFinished.value = false;
+                    startTime.value = Date.now();
+                };
+
+                const previousQuestion = () => {
+                    if (currentQuestionIndex.value > 0) {
+                        currentQuestionIndex.value--;
+                    }
+                };
+
+                const nextOrFinish = () => {
+                    if (currentQuestionIndex.value < questions.value.length - 1) {
+                        currentQuestionIndex.value++;
+                    } else {
+                        finishExam();
+                    }
+                };
+
+                const finishExam = () => {
+                    let correctCount = 0;
+                    for (let i = 0; i < questions.value.length; i++) {
+                        if (answers.value[i] === questions.value[i].correct) {
+                            correctCount++;
+                        }
+                    }
+                    examScore.value = Math.round((correctCount / questions.value.length) * 100);
+                    examTime.value = Math.round((Date.now() - startTime.value) / 1000);
+                    examFinished.value = true;
+
+                    const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                    if (currentUser.id) {
+                        db.examRecords.put({
+                            userId: currentUser.id,
+                            id: `${selectedRole.value}-${Date.now()}`,
+                            role: selectedRole.value,
+                            score: examScore.value,
+                            durationSeconds: examTime.value,
+                            submittedAt: new Date().toISOString()
+                        }).catch(err => {
+                            console.log('Save exam record error:', err);
+                        });
+                    }
+                };
+
+                const resetExam = () => {
+                    examStarted.value = false;
+                    examFinished.value = false;
+                    router.push('/dashboard');
+                };
+
+                const restartExam = () => {
+                    startExam(selectedRole.value);
+                };
+
+                const roleConfig = {
+                    '实习生': { desc: '基础平台认知、基本操作流程', count: 15, time: 45 },
+                    '运营助理': { desc: '商品上架、Listing优化、日常运营执行', count: 20, time: 60 },
+                    '运营专员': { desc: '全链路运营能力、推广投放、数据分析', count: 20, time: 75 },
+                    '运营组长': { desc: '团队管理、策略制定、跨平台协同', count: 15, time: 90 },
+                    '运营主管': { desc: '多平台统筹、团队绩效管理、预算把控', count: 15, time: 90 }
+                };
+
+                const getRoleDescription = (role) => roleConfig[role]?.desc || '';
+                const getRoleQuestionCount = (role) => roleConfig[role]?.count || 0;
+                const getRoleTime = (role) => roleConfig[role]?.time || 0;
+
+                return {
+                    roles,
+                    selectedRole,
+                    questions,
+                    currentQuestion,
+                    currentQuestionIndex,
+                    answers,
+                    examStarted,
+                    examFinished,
+                    examScore,
+                    examTime,
+                    startExam,
+                    previousQuestion,
+                    nextOrFinish,
+                    resetExam,
+                    restartExam,
+                    getRoleDescription,
+                    getRoleQuestionCount,
+                    getRoleTime
+                };
+            }
+        };
+
+        // ==================== Tasks Component ====================
+        const TasksView = {
+            template: `
+                <div>
+                    <div class="flex-between" style="margin-bottom: 20px;">
+                        <h1>实操任务</h1>
+                        <div class="flex">
+                            <button class="btn btn-text" @click="filterStatus = null" :style="{ color: !filterStatus ? 'var(--accent)' : 'var(--text-secondary)' }">全部</button>
+                            <button class="btn btn-text" @click="filterStatus = '待完成'" :style="{ color: filterStatus === '待完成' ? 'var(--accent)' : 'var(--text-secondary)' }">待完成</button>
+                            <button class="btn btn-text" @click="filterStatus = '已提交'" :style="{ color: filterStatus === '已提交' ? 'var(--accent)' : 'var(--text-secondary)' }">已提交</button>
+                            <button class="btn btn-text" @click="filterStatus = '已评分'" :style="{ color: filterStatus === '已评分' ? 'var(--accent)' : 'var(--text-secondary)' }">已评分</button>
+                        </div>
+                    </div>
+
+                    <div class="grid">
+                        <div v-for="task in filteredTasks" :key="task.id" class="card" style="cursor: pointer;" @click="goTaskDetail(task.id)">
+                            <div class="flex-between" style="margin-bottom: 10px;">
+                                <h3>{{ task.title }}</h3>
+                                <span class="badge" :class="getTaskStatusClass(task.id)">{{ getTaskStatus(task.id) }}</span>
+                            </div>
+                            <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 15px;">{{ task.description }}</p>
+                            <div class="flex-between">
+                                <div style="font-size: 12px; color: var(--text-secondary);">第{{ task.courseId }}课</div>
+                                <div style="font-weight: 600; color: var(--accent);">+ {{ task.points }}分</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const router = useRouter();
+                const filterStatus = ref(null);
+                const taskStatusMap = reactive({ ...DEFAULT_TASK_STATUS_MAP });
+
+                const loadTaskStatus = async () => {
+                    Object.keys(taskStatusMap).forEach(key => delete taskStatusMap[key]);
+                    Object.assign(taskStatusMap, DEFAULT_TASK_STATUS_MAP);
+
+                    const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                    if (!currentUser.id) return;
+
+                    try {
+                        const submissions = await db.taskSubmissions.where('userId').equals(currentUser.id).toArray();
+                        submissions.forEach(item => {
+                            taskStatusMap[item.taskId] = item.status || '已提交';
+                        });
+                    } catch (err) {
+                        console.log('Load task status error:', err);
+                    }
+                };
+
+                const filteredTasks = computed(() => {
+                    return TASKS.filter(task => {
+                        if (!filterStatus.value) return true;
+                        return getTaskStatus(task.id) === filterStatus.value;
+                    });
+                });
+
+                const getTaskStatus = (taskId) => {
+                    return taskStatusMap[taskId] || '待完成';
+                };
+
+                const getTaskStatusClass = (taskId) => {
+                    const status = getTaskStatus(taskId);
+                    if (status === '已评分') return 'badge-success';
+                    if (status === '已提交') return 'badge-warning';
+                    return 'badge-info';
+                };
+
+                const goTaskDetail = (taskId) => {
+                    router.push(`/tasks/${taskId}`);
+                };
+
+                onMounted(() => {
+                    loadTaskStatus();
+                });
+
+                watch(() => router.currentRoute.value.fullPath, () => {
+                    loadTaskStatus();
+                });
+
+                return {
+                    filterStatus,
+                    filteredTasks,
+                    getTaskStatus,
+                    getTaskStatusClass,
+                    goTaskDetail
+                };
+            }
+        };
+
+        // ==================== Task Detail Component ====================
+        const TaskDetailView = {
+            template: `
+                <div>
+                    <div class="flex-between" style="margin-bottom: 20px;">
+                        <div>
+                            <button class="btn btn-text" @click="goBack" style="margin-bottom: 10px;">← 返回</button>
+                            <h1>{{ task.title }}</h1>
+                        </div>
+                        <span class="badge" :class="getTaskStatusClass()">{{ taskStatus }}</span>
+                    </div>
+
+                    <div class="grid" style="grid-template-columns: 1fr 350px;">
+                        <div>
+                            <div class="card">
+                                <div class="card-title">任务说明</div>
+                                <div style="padding: 20px; line-height: 1.8; color: var(--text-secondary);">
+                                    <p>{{ task.description }}</p>
+                                    <p style="margin-top: 15px;">该任务要求您在认真学习第{{ task.courseId }}课内容后，完成以下要求：</p>
+                                    <ul style="margin-top: 10px;">
+                                        <li>深入理解课程内容</li>
+                                        <li>结合实际工作进行思考</li>
+                                        <li>提交完整的任务说明</li>
+                                        <li>配合带教人进行讨论</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-title">评分标准</div>
+                                <table class="table" style="margin-top: 15px;">
+                                    <thead>
+                                        <tr>
+                                            <th>评分项</th>
+                                            <th>满分</th>
+                                            <th>您的得分</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>理解程度</td>
+                                            <td>40分</td>
+                                            <td>{{ taskStatus === '已评分' ? '38分' : '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>完整性</td>
+                                            <td>30分</td>
+                                            <td>{{ taskStatus === '已评分' ? '28分' : '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>实用性</td>
+                                            <td>30分</td>
+                                            <td>{{ taskStatus === '已评分' ? '27分' : '-' }}</td>
+                                        </tr>
+                                        <tr style="background: var(--light-bg); font-weight: 600;">
+                                            <td>总分</td>
+                                            <td>100分</td>
+                                            <td>{{ taskStatus === '已评分' ? '93分' : '-' }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div v-if="taskStatus === '已评分'" class="card">
+                                <div class="card-title">评分意见</div>
+                                <div style="padding: 20px; background: var(--light-bg); border-radius: 6px;">
+                                    <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.8;">
+                                        任务完成很好！对第{{ task.courseId }}课的内容理解深入，提交的任务说明条理清晰、内容完整。希望继续保持这样的学习态度，争取完成后续所有任务。
+                                    </p>
+                                    <div style="margin-top: 15px; font-size: 12px; color: var(--text-secondary);">
+                                        评分人：李老师 | 评分时间：2024-01-22 14:30
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="card">
+                                <div class="card-title">任务信息</div>
+                                <div style="padding: 20px;">
+                                    <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+                                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">所属课程</div>
+                                        <div style="font-weight: 600;">第{{ task.courseId }}课</div>
+                                    </div>
+                                    <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+                                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">获得积分</div>
+                                        <div style="font-weight: 600; color: var(--accent);">{{ task.points }}分</div>
+                                    </div>
+                                    <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+                                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">状态</div>
+                                        <span class="badge" :class="getTaskStatusClass()">{{ taskStatus }}</span>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">提交截止</div>
+                                        <div style="font-weight: 600;">2024-02-15</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div v-if="taskStatus !== '已评分'" class="card">
+                                <div class="card-title">我的提交</div>
+                                <div style="padding: 20px;">
+                                    <textarea
+                                        v-model="submission"
+                                        class="form-textarea"
+                                        :disabled="taskStatus === '已提交'"
+                                        placeholder="请输入您的任务完成说明..."></textarea>
+                                    <button
+                                        @click="submitTask"
+                                        class="btn btn-primary w-full mt-20"
+                                        :disabled="taskStatus === '已提交'">
+                                        {{ taskStatus === '已提交' ? '已提交' : '提交任务' }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const router = useRouter();
+                const route = useRoute();
+                const taskId = parseInt(route.params.id);
+                const task = ref(TASKS.find(t => t.id === taskId));
+                const submission = ref('');
+                const taskStatus = ref(DEFAULT_TASK_STATUS_MAP[taskId] || '待完成');
+
+                const loadTaskSubmission = async () => {
+                    const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                    if (!currentUser.id) return;
+
+                    try {
+                        const record = await db.taskSubmissions.get([currentUser.id, taskId]);
+                        if (record) {
+                            submission.value = record.content || '';
+                            taskStatus.value = record.status || '已提交';
+                        }
+                    } catch (err) {
+                        console.log('Load task submission error:', err);
+                    }
+                };
+
+                const getTaskStatusClass = () => {
+                    if (taskStatus.value === '已评分') return 'badge-success';
+                    if (taskStatus.value === '已提交') return 'badge-warning';
+                    return 'badge-info';
+                };
+
+                const goBack = () => {
+                    router.push('/tasks');
+                };
+
+                const submitTask = () => {
+                    if (!submission.value.trim()) {
+                        alert('请输入任务说明');
+                        return;
+                    }
+
+                    const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                    if (!currentUser.id) {
+                        alert('用户信息异常，请重新登录');
+                        return;
+                    }
+
+                    db.taskSubmissions.put({
+                        userId: currentUser.id,
+                        taskId,
+                        content: submission.value.trim(),
+                        status: '已提交',
+                        submittedAt: new Date().toISOString()
+                    }).then(() => {
+                        taskStatus.value = '已提交';
+                        alert('任务已提交！等待评分中...');
+                    }).catch(err => {
+                        console.log('Submit task error:', err);
+                        alert('提交失败，请稍后重试');
+                    });
+                };
+
+                onMounted(() => {
+                    loadTaskSubmission();
+                });
+
+                return {
+                    task,
+                    taskStatus,
+                    submission,
+                    getTaskStatusClass,
+                    goBack,
+                    submitTask
+                };
+            }
+        };
+
+        // ==================== Mentor Tracking Component ====================
+        const MentorView = {
+            template: `
+                <div>
+                    <div class="flex-between" style="margin-bottom: 20px;">
+                        <h1>带教跟踪</h1>
+                        <button class="btn btn-primary" @click="showAddLog = true">+ 新建周记录</button>
+                    </div>
+
+                    <div class="grid">
+                        <div v-for="log in logs" :key="log.weekNum" class="card" style="cursor: pointer;" @click="viewLog(log)">
+                            <div class="flex-between" style="margin-bottom: 10px;">
+                                <h3>第{{ log.weekNum }}周跟踪记录</h3>
+                                <span class="badge badge-success">已签名</span>
+                            </div>
+                            <div style="padding: 15px 0; border-bottom: 1px solid var(--border);">
+                                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">学员</div>
+                                <div style="font-weight: 600;">{{ log.trainee }}</div>
+                            </div>
+                            <div style="padding: 15px 0;">
+                                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">学习内容</div>
+                                <div style="font-size: 14px;">{{ log.content }}</div>
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">{{ log.date }}</div>
+                        </div>
+                    </div>
+
+                    <div v-if="showAddLog" class="modal" @click.self="showAddLog = false">
+                        <div class="modal-content">
+                            <div class="modal-header">新建周记录</div>
+                            <div class="form-group">
+                                <label class="form-label">选择学员</label>
+                                <select class="form-select">
+                                    <option>张三</option>
+                                    <option>李四</option>
+                                    <option>王五</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">本周学习内容</label>
+                                <textarea class="form-textarea" placeholder="描述本周学员的学习内容..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">完成情况</label>
+                                <textarea class="form-textarea" placeholder="评价学员本周的完成情况..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">问题反馈</label>
+                                <textarea class="form-textarea" placeholder="记录学员遇到的问题..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">带教建议</label>
+                                <textarea class="form-textarea" placeholder="提出后续的带教建议..."></textarea>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-text" @click="showAddLog = false">取消</button>
+                                <button class="btn btn-primary">保存记录</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const showAddLog = ref(false);
+                const logs = ref([
+                    { weekNum: 1, trainee: '张三', content: '公司简介、组织架构、岗位职责', date: '2024-01-15' },
+                    { weekNum: 2, trainee: '张三', content: '产品知识、销售流程、客户管理', date: '2024-01-22' },
+                    { weekNum: 3, trainee: '张三', content: 'ERP系统、CRM工具、数据分析', date: '2024-01-29' }
+                ]);
+
+                const viewLog = (log) => {
+                    alert(`查看第${log.weekNum}周的跟踪记录`);
+                };
+
+                return {
+                    showAddLog,
+                    logs,
+                    viewLog
+                };
+            }
+        };
+
+        // ==================== KPI Component ====================
+        const KPIView = {
+            template: `
+                <div>
+                    <div class="flex-between" style="margin-bottom: 20px;">
+                        <h1>KPI考核</h1>
+                        <div v-if="isAdmin" class="flex">
+                            <button class="btn btn-primary" @click="showEditKPI = true">+ 设定KPI目标</button>
+                        </div>
+                    </div>
+
+                    <div class="grid" style="grid-template-columns: 1fr;">
+                        <div class="card">
+                            <div class="card-title">{{ currentPeriod }}月度KPI</div>
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>KPI指标</th>
+                                        <th>目标值</th>
+                                        <th>实际值</th>
+                                        <th>权重</th>
+                                        <th>得分</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="kpi in kpiItems" :key="kpi.id">
+                                        <td>{{ kpi.name }}</td>
+                                        <td>{{ kpi.target }}</td>
+                                        <td>
+                                            <input v-if="!isReadOnly" type="text" class="form-input" v-model="kpi.actual" style="width: 100px;">
+                                            <span v-else>{{ kpi.actual }}</span>
+                                        </td>
+                                        <td>{{ kpi.weight }}%</td>
+                                        <td style="font-weight: 600; color: var(--accent);">{{ kpi.score }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="grid">
+                            <div class="stat-card">
+                                <div class="stat-card-label">KPI达成率</div>
+                                <div class="stat-card-value">{{ kpiAchievement }}%</div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" :style="{ width: kpiAchievement + '%' }"></div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-card-label">总体得分</div>
+                                <div class="stat-card-value" :style="{ color: totalScore >= 80 ? 'var(--success)' : 'var(--warning)' }">
+                                    {{ totalScore }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-title">历史KPI记录</div>
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>时间</th>
+                                        <th>KPI类型</th>
+                                        <th>达成率</th>
+                                        <th>得分</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>2024年1月</td>
+                                        <td>销售KPI</td>
+                                        <td>85%</td>
+                                        <td style="color: var(--success);">85</td>
+                                    </tr>
+                                    <tr>
+                                        <td>2024年2月</td>
+                                        <td>销售KPI</td>
+                                        <td>92%</td>
+                                        <td style="color: var(--success);">92</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div v-if="showEditKPI" class="modal" @click.self="showEditKPI = false">
+                        <div class="modal-content">
+                            <div class="modal-header">设定KPI目标</div>
+                            <div class="form-group">
+                                <label class="form-label">选择学员</label>
+                                <select class="form-select">
+                                    <option>张三</option>
+                                    <option>李四</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">考核周期</label>
+                                <select class="form-select">
+                                    <option>2024年3月</option>
+                                    <option>2024年4月</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">KPI指标1目标值</label>
+                                <input type="number" class="form-input" placeholder="输入目标值">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">KPI指标2目标值</label>
+                                <input type="number" class="form-input" placeholder="输入目标值">
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-text" @click="showEditKPI = false">取消</button>
+                                <button class="btn btn-primary">保存</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const isAdmin = computed(() => {
+                    const user = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                    return user.role === 'admin';
+                });
+
+                const currentPeriod = ref('2024年3月');
+                const showEditKPI = ref(false);
+                const isReadOnly = ref(true);
+                const kpiItems = ref([
+                    { id: 1, name: '新客户开发数', target: '20个', actual: 18, weight: 30, score: 90 },
+                    { id: 2, name: '销售回款额', target: '100万元', actual: '92万元', weight: 40, score: 92 },
+                    { id: 3, name: '客户满意度', target: '95%', actual: '94%', weight: 20, score: 94 },
+                    { id: 4, name: '工作报告及时率', target: '100%', actual: '100%', weight: 10, score: 100 }
+                ]);
+
+                const kpiAchievement = computed(() => {
+                    return Math.round((18 + 92 + 94 + 100) / 4);
+                });
+
+                const totalScore = computed(() => {
+                    return Math.round((90 * 0.3 + 92 * 0.4 + 94 * 0.2 + 100 * 0.1) / 100);
+                });
+
+                return {
+                    isAdmin,
+                    currentPeriod,
+                    showEditKPI,
+                    isReadOnly,
+                    kpiItems,
+                    kpiAchievement,
+                    totalScore
+                };
+            }
+        };
+
+        // ==================== Evaluation Component ====================
+        const EvaluationView = {
+            template: `
+                <div>
+                    <h1 style="margin-bottom: 20px;">转正评估</h1>
+
+                    <div class="grid" style="grid-template-columns: 1fr;">
+                        <div class="card">
+                            <div class="card-title">{{ evaluatingUser }}的转正评估</div>
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>评估项目</th>
+                                        <th>内容</th>
+                                        <th>结果</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>课程完成率</td>
+                                        <td>完成7课学习</td>
+                                        <td><span class="badge badge-success">7/7</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>考试成绩</td>
+                                        <td>岗位考试</td>
+                                        <td><span class="badge badge-success">92分</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>实操评分</td>
+                                        <td>14个实操任务</td>
+                                        <td><span class="badge badge-success">14/14</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>带教评价</td>
+                                        <td>4周周度评价</td>
+                                        <td><span class="badge badge-success">优秀</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>KPI达成</td>
+                                        <td>月度KPI考核</td>
+                                        <td><span class="badge badge-success">92%</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="grid">
+                            <div class="stat-card">
+                                <div class="stat-card-label">综合评分</div>
+                                <div class="stat-card-value">91</div>
+                                <div style="font-size: 12px; color: var(--success); margin-top: 10px; font-weight: 600;">符合转正标准</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-card-label">评估进度</div>
+                                <div class="stat-card-value" style="font-size: 24px;">60%</div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 60%;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-title">带教人评价</div>
+                            <div style="padding: 20px;">
+                                <div style="margin-bottom: 15px;">
+                                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">学员表现评价</div>
+                                    <textarea class="form-textarea" placeholder="请输入带教人的评价意见..." style="height: 80px;"></textarea>
+                                </div>
+                                <div>
+                                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">推荐意见</div>
+                                    <select class="form-select">
+                                        <option>推荐转正</option>
+                                        <option>延期转正</option>
+                                        <option>不推荐转正</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-title">管理员审批</div>
+                            <div style="padding: 20px;">
+                                <div style="margin-bottom: 20px;">
+                                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 10px;">审批意见</div>
+                                    <div style="padding: 15px; background: var(--light-bg); border-radius: 6px; border-left: 4px solid var(--success);">
+                                        <p>学员各项指标均达到转正标准，建议立即转正。</p>
+                                        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 10px;">审批人：王经理 | 审批时间：2024-01-28</p>
+                                    </div>
+                                </div>
+                                <div style="margin-bottom: 20px;">
+                                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">审批状态</div>
+                                    <span class="badge badge-success">已审批</span>
+                                </div>
+                                <div>
+                                    <button class="btn btn-primary w-full">打印评估报告</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const evaluatingUser = ref('张三');
+                return { evaluatingUser };
+            }
+        };
+
+        // ==================== Resources Component ====================
+        const ResourcesView = {
+            template: `
+                <div>
+                    <h1 style="margin-bottom: 20px;">资源中心</h1>
+
+                    <div style="margin-bottom: 30px;">
+                        <div class="flex" style="margin-bottom: 15px;">
+                            <input type="text" class="form-input" v-model="searchQuery" placeholder="搜索FAQ、模板、链接..." style="flex: 1;">
+                            <button class="btn btn-primary" style="margin-left: 10px;">搜索</button>
+                        </div>
+                    </div>
+
+                    <div class="grid" style="grid-template-columns: repeat(3, 1fr);">
+                        <div class="card" @click="currentTab = 'faq'" style="cursor: pointer; border: 2px solid" :style="{ borderColor: currentTab === 'faq' ? 'var(--accent)' : 'var(--border)' }">
+                            <div style="font-size: 24px; margin-bottom: 10px;">❓</div>
+                            <div style="font-weight: 600; margin-bottom: 5px;">FAQ知识库</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">23条常见问题</div>
+                        </div>
+                        <div class="card" @click="currentTab = 'template'" style="cursor: pointer; border: 2px solid" :style="{ borderColor: currentTab === 'template' ? 'var(--accent)' : 'var(--border)' }">
+                            <div style="font-size: 24px; margin-bottom: 10px;">📋</div>
+                            <div style="font-weight: 600; margin-bottom: 5px;">工作模板</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">15个常用模板</div>
+                        </div>
+                        <div class="card" @click="currentTab = 'link'" style="cursor: pointer; border: 2px solid" :style="{ borderColor: currentTab === 'link' ? 'var(--accent)' : 'var(--border)' }">
+                            <div style="font-size: 24px; margin-bottom: 10px;">🔗</div>
+                            <div style="font-weight: 600; margin-bottom: 5px;">常用链接</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">18条快速导航</div>
+                        </div>
+                    </div>
+
+                    <div v-if="currentTab === 'faq'" class="card" style="margin-top: 20px;">
+                        <div class="card-title">FAQ知识库</div>
+                        <div style="padding: 20px;">
+                            <div v-for="(faq, index) in filteredFAQ" :key="index" style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+                                <h3 style="margin-bottom: 10px; cursor: pointer; color: var(--accent);" @click="faq.expanded = !faq.expanded">
+                                    {{ faq.expanded ? '▼' : '▶' }} {{ faq.question }}
+                                </h3>
+                                <p v-if="faq.expanded" style="color: var(--text-secondary); line-height: 1.8;">{{ faq.answer }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-else-if="currentTab === 'template'" class="card" style="margin-top: 20px;">
+                        <div class="card-title">工作模板下载</div>
+                        <table class="table" style="margin-top: 15px;">
+                            <thead>
+                                <tr>
+                                    <th>模板名称</th>
+                                    <th>分类</th>
+                                    <th>下载</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>日报模板</td>
+                                    <td>报表</td>
+                                    <td><a href="#" style="color: var(--accent);">下载</a></td>
+                                </tr>
+                                <tr>
+                                    <td>周报模板</td>
+                                    <td>报表</td>
+                                    <td><a href="#" style="color: var(--accent);">下载</a></td>
+                                </tr>
+                                <tr>
+                                    <td>月报模板</td>
+                                    <td>报表</td>
+                                    <td><a href="#" style="color: var(--accent);">下载</a></td>
+                                </tr>
+                                <tr>
+                                    <td>客户档案模板</td>
+                                    <td>客户管理</td>
+                                    <td><a href="#" style="color: var(--accent);">下载</a></td>
+                                </tr>
+                                <tr>
+                                    <td>销售计划模板</td>
+                                    <td>销售管理</td>
+                                    <td><a href="#" style="color: var(--accent);">下载</a></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div v-else-if="currentTab === 'link'" class="card" style="margin-top: 20px;">
+                        <div class="card-title">常用链接</div>
+                        <div style="padding: 20px;">
+                            <div v-for="link in links" :key="link.id" style="margin-bottom: 15px;">
+                                <a :href="link.url" target="_blank" style="color: var(--accent); font-weight: 600; text-decoration: none;">
+                                    {{ link.name }} →
+                                </a>
+                                <p style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">{{ link.description }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const currentTab = ref('faq');
+                const searchQuery = ref('');
+
+                const faqItems = ref([
+                    { question: '如何重置密码？', answer: '您可以在登录页面点击"忘记密码"，或联系管理员进行重置。', expanded: false },
+                    { question: '考试可以多次参加吗？', answer: '是的，考试可以参加多次，系统会记录您最高的成绩。', expanded: false },
+                    { question: '任务评分标准是什么？', answer: '任务评分包括理解程度、完整性和实用性三个方面，各占一定比例。', expanded: false },
+                    { question: '如何下载结业证书？', answer: '在转正通过后，您可以在个人中心下载电子版结业证书。', expanded: false },
+                    { question: '带教人如何填写周记录？', answer: '每周周一通过"带教跟踪"菜单，填写学员的学习进展和反馈意见。', expanded: false }
+                ]);
+
+                const links = ref([
+                    { id: 1, name: 'ERP系统', description: '企业资源规划系统', url: '#' },
+                    { id: 2, name: 'CRM客户管理', description: '客户关系管理平台', url: '#' },
+                    { id: 3, name: '协作平台', description: '团队文档和沟通工具', url: '#' },
+                    { id: 4, name: '数据分析平台', description: '业务数据查询和分析', url: '#' },
+                    { id: 5, name: '企业邮箱', description: '员工电子邮件系统', url: '#' }
+                ]);
+
+                const filteredFAQ = computed(() => {
+                    if (!searchQuery.value) return faqItems.value;
+                    return faqItems.value.filter(item =>
+                        item.question.includes(searchQuery.value) || item.answer.includes(searchQuery.value)
+                    );
+                });
+
+                return {
+                    currentTab,
+                    searchQuery,
+                    faqItems,
+                    links,
+                    filteredFAQ
+                };
+            }
+        };
+
+        // ==================== Analytics Component ====================
+        const AnalyticsView = {
+            template: `
+                <div>
+                    <h1 style="margin-bottom: 20px;">数据分析与报表</h1>
+
+                    <div class="grid">
+                        <div class="stat-card">
+                            <div class="stat-card-label">总在培人数</div>
+                            <div class="stat-card-value">24</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-label">平均课程完成率</div>
+                            <div class="stat-card-value">85%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-label">平均考试成绩</div>
+                            <div class="stat-card-value">88</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-label">本月转正人数</div>
+                            <div class="stat-card-value">3</div>
+                        </div>
+                    </div>
+
+                    <div class="grid">
+                        <div class="card">
+                            <div class="card-title">团队学习进度总览</div>
+                            <canvas id="progressOverviewChart"></canvas>
+                        </div>
+                        <div class="card">
+                            <div class="card-title">考试成绩分布</div>
+                            <canvas id="scoreDistributionChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="grid">
+                        <div class="card">
+                            <div class="card-title">课程完成率排名</div>
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>学员</th>
+                                        <th>课程完成</th>
+                                        <th>考试成绩</th>
+                                        <th>任务完成</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>张三</td>
+                                        <td>7/7</td>
+                                        <td>92</td>
+                                        <td>14/14</td>
+                                    </tr>
+                                    <tr>
+                                        <td>李四</td>
+                                        <td>6/7</td>
+                                        <td>88</td>
+                                        <td>12/14</td>
+                                    </tr>
+                                    <tr>
+                                        <td>王五</td>
+                                        <td>5/7</td>
+                                        <td>85</td>
+                                        <td>10/14</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="card">
+                            <div class="card-title">月度转正统计</div>
+                            <canvas id="confirmationChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">数据导入导出</div>
+                        <div style="padding: 20px;">
+                            <div class="flex gap-10" style="margin-bottom: 15px;">
+                                <button class="btn btn-secondary">📥 导出数据为JSON</button>
+                                <button class="btn btn-secondary">📤 从JSON导入数据</button>
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">
+                                💡 提示：定期导出数据可作为备份，导入功能可用于数据恢复或迁移。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                onMounted(() => {
+                    setTimeout(() => {
+                        if (document.getElementById('progressOverviewChart')) {
+                            new Chart(document.getElementById('progressOverviewChart'), {
+                                type: 'bar',
+                                data: {
+                                    labels: ['第1课', '第2课', '第3课', '第4课', '第5课', '第6课', '第7课'],
+                                    datasets: [{
+                                        label: '完成人数',
+                                        data: [24, 24, 23, 21, 18, 15, 8],
+                                        backgroundColor: '#FF6B35'
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    plugins: { legend: { display: false } }
+                                }
+                            });
+                        }
+
+                        if (document.getElementById('scoreDistributionChart')) {
+                            new Chart(document.getElementById('scoreDistributionChart'), {
+                                type: 'bar',
+                                data: {
+                                    labels: ['60-70', '70-80', '80-90', '90-100'],
+                                    datasets: [{
+                                        label: '人数',
+                                        data: [2, 5, 10, 7],
+                                        backgroundColor: '#4DD8E8'
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    plugins: { legend: { display: false } }
+                                }
+                            });
+                        }
+
+                        if (document.getElementById('confirmationChart')) {
+                            new Chart(document.getElementById('confirmationChart'), {
+                                type: 'line',
+                                data: {
+                                    labels: ['1月', '2月', '3月', '4月', '5月'],
+                                    datasets: [{
+                                        label: '转正人数',
+                                        data: [2, 3, 4, 3, 2],
+                                        borderColor: '#52c41a',
+                                        backgroundColor: 'rgba(82, 196, 26, 0.1)',
+                                        tension: 0.4
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    plugins: { legend: { display: false } }
+                                }
+                            });
+                        }
+                    }, 100);
+                });
+
+                return {};
+            }
+        };
+
+        // ==================== Layout Component ====================
+        const AppLayout = {
+            template: `
+                <div class="layout">
+                    <div class="sidebar" :class="{ open: sidebarOpen }">
+                        <div class="sidebar-header">
+                            <div class="sidebar-title">SOP管理系统</div>
+                            <div class="sidebar-user">{{ currentUserName }}</div>
+                        </div>
+                        <nav class="sidebar-nav">
+                            <li v-for="route in visibleRoutes" :key="route.path">
+                                <router-link :to="route.path" class="sidebar-link" @click="sidebarOpen = false">
+                                    {{ route.label }}
+                                </router-link>
+                            </li>
+                            <li style="margin-top: auto; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                                <a href="#" class="sidebar-link" @click.prevent="handleLogout" style="color: rgba(255, 255, 255, 0.6);">
+                                    登出
+                                </a>
+                            </li>
+                        </nav>
+                    </div>
+
+                    <div class="main-content">
+                        <div class="topbar">
+                            <div class="topbar-left">
+                                <button class="toggle-sidebar" @click="sidebarOpen = !sidebarOpen">☰</button>
+                                <div class="breadcrumb">
+                                    <span>首页</span>
+                                    <span>/</span>
+                                    <span>{{ currentPageTitle }}</span>
+                                </div>
+                            </div>
+                            <div class="topbar-right">
+                                <div class="user-profile">
+                                    <div class="avatar">{{ currentUserNameShort }}</div>
+                                    <span>{{ currentUserName }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="content">
+                            <router-view></router-view>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const router = useRouter();
+                const route = useRoute();
+                const sidebarOpen = ref(false);
+
+                const currentUser = computed(() => {
+                    const user = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                    return user;
+                });
+
+                const currentUserName = computed(() => currentUser.value.name || '用户');
+                const currentUserNameShort = computed(() => currentUser.value.name?.charAt(0) || 'U');
+                const userRole = computed(() => currentUser.value.role || 'trainee');
+
+                const allRoutes = [
+                    { path: '/dashboard', label: '仪表盘', roles: ['admin', 'mentor', 'trainee'] },
+                    { path: '/courses', label: '培训中心', roles: ['admin', 'mentor', 'trainee'] },
+                    { path: '/exam', label: '在线考试', roles: ['admin', 'trainee'] },
+                    { path: '/tasks', label: '实操任务', roles: ['admin', 'mentor', 'trainee'] },
+                    { path: '/mentor', label: '带教跟踪', roles: ['admin', 'mentor'] },
+                    { path: '/kpi', label: 'KPI考核', roles: ['admin', 'mentor', 'trainee'] },
+                    { path: '/evaluation', label: '转正评估', roles: ['admin', 'mentor'] },
+                    { path: '/resources', label: '资源中心', roles: ['admin', 'mentor', 'trainee'] },
+                    { path: '/analytics', label: '数据分析', roles: ['admin'] }
+                ];
+
+                const visibleRoutes = computed(() => {
+                    return allRoutes.filter(r => r.roles.includes(userRole.value));
+                });
+
+                const pageRoutes = {
+                    '/dashboard': '仪表盘',
+                    '/courses': '培训中心',
+                    '/exam': '在线考试',
+                    '/tasks': '实操任务',
+                    '/mentor': '带教跟踪',
+                    '/kpi': 'KPI考核',
+                    '/evaluation': '转正评估',
+                    '/resources': '资源中心',
+                    '/analytics': '数据分析'
+                };
+
+                const currentPageTitle = computed(() => {
+                    return pageRoutes[route.path] || '系统';
+                });
+
+                const handleLogout = () => {
+                    sessionStorage.removeItem('currentUser');
+                    router.push('/');
+                };
+
+                return {
+                    sidebarOpen,
+                    currentUserName,
+                    currentUserNameShort,
+                    visibleRoutes,
+                    currentPageTitle,
+                    handleLogout
+                };
+            }
+        };
+
+        // ==================== Router Configuration ====================
+        const routes = [
+            {
+                path: '/',
+                component: LoginView,
+                meta: { requiresAuth: false }
+            },
+            {
+                path: '/dashboard',
+                component: DashboardView,
+                meta: { requiresAuth: true }
+            },
+            {
+                path: '/courses',
+                component: CoursesView,
+                meta: { requiresAuth: true }
+            },
+            {
+                path: '/courses/:id',
+                component: CourseDetailView,
+                meta: { requiresAuth: true }
+            },
+            {
+                path: '/exam',
+                component: ExamView,
+                meta: { requiresAuth: true }
+            },
+            {
+                path: '/tasks',
+                component: TasksView,
+                meta: { requiresAuth: true }
+            },
+            {
+                path: '/tasks/:id',
+                component: TaskDetailView,
+                meta: { requiresAuth: true }
+            },
+            {
+                path: '/mentor',
+                component: MentorView,
+                meta: { requiresAuth: true }
+            },
+            {
+                path: '/kpi',
+                component: KPIView,
+                meta: { requiresAuth: true }
+            },
+            {
+                path: '/evaluation',
+                component: EvaluationView,
+                meta: { requiresAuth: true }
+            },
+            {
+                path: '/resources',
+                component: ResourcesView,
+                meta: { requiresAuth: true }
+            },
+            {
+                path: '/analytics',
+                component: AnalyticsView,
+                meta: { requiresAuth: true }
+            }
+        ];
+
+        const router = createRouter({
+            history: createWebHashHistory(),
+            routes
+        });
+
+        // Router guards
+        router.beforeEach((to, from, next) => {
+            const isAuthenticated = !!sessionStorage.getItem('currentUser');
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+            const role = currentUser.role || 'trainee';
+
+            const normalizedPath = to.path.startsWith('/courses/')
+                ? '/courses'
+                : to.path.startsWith('/tasks/')
+                    ? '/tasks'
+                    : to.path;
+
+            const roleGuardMap = {
+                '/exam': ['admin', 'trainee'],
+                '/mentor': ['admin', 'mentor'],
+                '/evaluation': ['admin', 'mentor'],
+                '/analytics': ['admin']
+            };
+
+            const allowedRoles = roleGuardMap[normalizedPath];
+            if (to.meta.requiresAuth && !isAuthenticated) {
+                next('/');
+            } else if (to.path === '/' && isAuthenticated) {
+                next('/dashboard');
+            } else if (allowedRoles && !allowedRoles.includes(role)) {
+                next('/dashboard');
+            } else {
+                next();
+            }
+        });
+
+        // ==================== App Setup ====================
+        const app = createApp({
+            template: '<app-layout />',
+            components: {
+                'app-layout': AppLayout
+            },
+            setup() {
+                onMounted(() => {
+                    // Initialize database
+                    db.open().catch(err => {
+                        console.log('Database initialization error:', err);
+                    });
+
+                    // Check if user is logged in
+                    const isAuth = !!sessionStorage.getItem('currentUser');
+                    if (isAuth && router.currentRoute.value.path === '/') {
+                        router.push('/dashboard');
+                    }
+                });
+            }
+        });
+
+        app.use(router);
+        app.mount('#app');
+    </script>
+</body>
+</html>
