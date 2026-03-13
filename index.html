@@ -5,6 +5,68 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>新人入职SOP管理系统</title>
 
+    <script>
+        (function () {
+            const bootErrors = [];
+
+            function escapeHtml(value) {
+                return String(value || '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            function renderBootError() {
+                const container = document.getElementById('app');
+                if (!container || !bootErrors.length) return;
+
+                const latest = bootErrors[bootErrors.length - 1];
+                container.innerHTML = `
+                    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f5f7fa; padding: 24px;">
+                        <div style="width: min(760px, 100%); background: #fff; border: 1px solid #ffd6d6; border-radius: 18px; box-shadow: 0 18px 50px rgba(27,40,56,0.12); padding: 28px;">
+                            <div style="font-size: 28px; font-weight: 700; color: #ff4d4f; margin-bottom: 10px;">页面初始化失败</div>
+                            <div style="font-size: 14px; color: #666; line-height: 1.8; margin-bottom: 18px;">
+                                当前不是正常白屏，而是前端启动阶段发生了错误。请把下面这段错误信息发给我，我可以继续定位。
+                            </div>
+                            <div style="padding: 14px 16px; border-radius: 12px; background: #fff1f0; border: 1px solid #ffa39e; color: #333; font-size: 13px; line-height: 1.8; white-space: pre-wrap; word-break: break-word;">${escapeHtml(latest)}</div>
+                            <div style="margin-top: 16px; font-size: 12px; color: #999;">
+                                如果你刚刚刷新过页面，请清缓存后再试一次；如果仍然出现这块面板，说明前端依赖或运行时逻辑仍有问题。
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function pushBootError(prefix, payload) {
+                const detail = payload && payload.stack
+                    ? `${prefix}\n${payload.stack}`
+                    : `${prefix}\n${payload && payload.message ? payload.message : payload || '未知错误'}`;
+                bootErrors.push(detail);
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', renderBootError, { once: true });
+                } else {
+                    renderBootError();
+                }
+            }
+
+            window.__SOP_BOOT_ERRORS__ = bootErrors;
+            window.__showBootError = function (payload) {
+                pushBootError('启动错误', payload);
+            };
+
+            window.addEventListener('error', function (event) {
+                const message = event.error || event.message || '未知脚本错误';
+                pushBootError('全局错误', message);
+            });
+
+            window.addEventListener('unhandledrejection', function (event) {
+                pushBootError('未处理的 Promise 异常', event.reason);
+            });
+        })();
+    </script>
+
     <!-- Vue 3 -->
     <script src="./vendor/vue.global.prod.js"></script>
     <!-- Vue Router 4 -->
@@ -703,6 +765,7 @@
     <div id="app"></div>
 
     <script>
+        try {
         const { createApp, ref, reactive, computed, watch, onMounted, onUnmounted } = Vue;
         const { createRouter, createWebHashHistory, useRouter, useRoute } = VueRouter;
         const { createSupabaseClient, isSupabaseReady, AuthService, DatabaseService } = window.AppServices;
@@ -3375,6 +3438,9 @@
 
         app.use(router);
         app.mount('#app');
+        } catch (error) {
+            window.__showBootError(error);
+        }
     </script>
 </body>
 </html>
