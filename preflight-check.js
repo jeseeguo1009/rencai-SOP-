@@ -49,6 +49,10 @@ function runPreflightChecks(rootDir) {
         'app-ops-views.js',
         'app-review-views.js',
         'app-support-views.js',
+        'vendor/vue.global.prod.js',
+        'vendor/vue-router.global.prod.js',
+        'vendor/chart.umd.min.js',
+        'vendor/supabase.min.js',
         'setup.sql',
         'seed_data.sql',
         'vercel.json',
@@ -168,9 +172,33 @@ function runPreflightChecks(rootDir) {
     const indexHtmlPath = path.join(rootDir, 'index.html');
     assertContains(
         indexHtmlPath,
-        /runtime-config\.js/,
+        /\.\/runtime-config\.js|runtime-config\.js/,
         '首页已引入 runtime-config.js',
         'index.html 没有引入 runtime-config.js'
+    );
+    assertContains(
+        indexHtmlPath,
+        /\.\/vendor\/vue\.global\.prod\.js/,
+        '首页已引入本地 Vue',
+        'index.html 仍未切换到本地 Vue 资源'
+    );
+    assertContains(
+        indexHtmlPath,
+        /\.\/vendor\/vue-router\.global\.prod\.js/,
+        '首页已引入本地 Vue Router',
+        'index.html 仍未切换到本地 Vue Router 资源'
+    );
+    assertContains(
+        indexHtmlPath,
+        /\.\/vendor\/chart\.umd\.min\.js/,
+        '首页已引入本地 Chart.js',
+        'index.html 仍未切换到本地 Chart.js 资源'
+    );
+    assertContains(
+        indexHtmlPath,
+        /\.\/vendor\/supabase\.min\.js/,
+        '首页已引入本地 Supabase SDK',
+        'index.html 仍未切换到本地 Supabase SDK 资源'
     );
     assertContains(
         indexHtmlPath,

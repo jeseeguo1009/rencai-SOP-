@@ -4,6 +4,8 @@
 
 如果你现在就是要立即上线，优先直接按 [DEPLOY_NOW.md](/Users/guojiangwei/人才SOP/DEPLOY_NOW.md) 执行。
 
+当前版本已经把 `Vue / Vue Router / Chart.js / Supabase SDK` 改为随仓库一起发布的本地静态资源，不再依赖 `unpkg` / `jsdelivr`。
+
 ## 上线前准备
 
 1. 在 Supabase 中执行 [setup.sql](/Users/guojiangwei/人才SOP/setup.sql)

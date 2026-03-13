@@ -138,6 +138,7 @@
 - 已新增 [DEPLOY_NOW.md](/Users/guojiangwei/人才SOP/DEPLOY_NOW.md) 作为立即上线手册，收敛数据库执行、Netlify 发布、烟雾检查和首轮联调顺序
 - 已新增 [SUPABASE_GO_LIVE_SQL.md](/Users/guojiangwei/人才SOP/SUPABASE_GO_LIVE_SQL.md) 作为 Supabase SQL 执行顺序说明，方便在 SQL Editor 中按最短路径完成建表与种子数据导入
 - 已新增 [bootstrap_admin.sql](/Users/guojiangwei/人才SOP/bootstrap_admin.sql) 用于首个管理员账号绑定，减少上线后卡在管理员无法登录的风险
+- 首页已将 Vue、Vue Router、Chart.js、Supabase SDK 切换为本地 vendor 静态资源，并移除未使用的 lucide CDN 依赖，优先解决国内访问环境白屏问题
 - 系统诊断页已新增“下一步动作”条，会根据是否仍有异常、是否完成人工确认，自动给出最合适的处理按钮
 - 系统诊断页的完整报告和异常专项导出，现已同步带上“下一步动作摘要”，方便系统内外按同一处理口径执行
 - 运营页面的排查模式已新增“一键应用排查筛选”，管理员可快速恢复到更适合查异常数据的筛选视图
