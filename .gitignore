@@ -1,0 +1,7 @@
+release-manifest.json
+release-history/
+sop-backup-*.json
+archive-export-*.json
+approval-logs-*.json
+system-health-*.json
+.netlify/

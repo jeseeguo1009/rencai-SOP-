@@ -1,0 +1,3382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新人入职SOP管理系统</title>
+
+    <!-- Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Vue Router 4 -->
+    <script src="https://unpkg.com/vue-router@4/dist/vue-router.global.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest"></script>
+    <script src="./runtime-config.js"></script>
+    <script src="./app-config.js"></script>
+    <script src="./app-services.js"></script>
+    <script src="./app-default-data.js"></script>
+    <script src="./app-fallback-data.js"></script>
+    <script src="./app-ops-views.js"></script>
+    <script src="./app-support-views.js"></script>
+    <script src="./app-review-views.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1B2838;
+            --accent: #FF6B35;
+            --secondary: #4DD8E8;
+            --light-bg: #f5f7fa;
+            --border: #e0e6ed;
+            --text-primary: #333;
+            --text-secondary: #666;
+            --success: #52c41a;
+            --warning: #faad14;
+            --danger: #ff4d4f;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: var(--light-bg);
+            color: var(--text-primary);
+        }
+
+        #app {
+            height: 100%;
+        }
+
+        .app-loading {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background:
+                radial-gradient(circle at top, rgba(77, 216, 232, 0.18), transparent 35%),
+                linear-gradient(135deg, #f5f7fa 0%, #eef3f8 100%);
+            padding: 24px;
+        }
+
+        .app-loading-card {
+            width: min(420px, 100%);
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid rgba(27, 40, 56, 0.08);
+            border-radius: 20px;
+            box-shadow: 0 18px 50px rgba(27, 40, 56, 0.12);
+            padding: 32px 28px;
+            text-align: center;
+        }
+
+        .app-loading-spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 18px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 107, 53, 0.18);
+            border-top-color: var(--accent);
+            animation: app-spin 0.9s linear infinite;
+        }
+
+        @keyframes app-spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Layout */
+        .layout {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: var(--primary);
+            color: white;
+            overflow-y: auto;
+            padding: 20px 0;
+            transition: transform 0.3s;
+        }
+
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .sidebar-user {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .sidebar-nav {
+            list-style: none;
+        }
+
+        .sidebar-nav li {
+            margin: 0;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .sidebar-nav a:hover,
+        .sidebar-nav a.active {
+            background: var(--accent);
+            color: white;
+        }
+
+        .sidebar-nav svg {
+            width: 18px;
+            height: 18px;
+            margin-right: 12px;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topbar {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .toggle-sidebar {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            display: none;
+        }
+
+        .toggle-sidebar svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            background: var(--light-bg);
+        }
+
+        /* Components */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #e55a2b;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #3ac5d5;
+        }
+
+        .btn-text {
+            background: transparent;
+            color: var(--accent);
+        }
+
+        .btn-text:hover {
+            background: rgba(255, 107, 53, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .table th {
+            background: var(--light-bg);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--primary);
+            border-bottom: 2px solid var(--border);
+        }
+
+        .table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .table tr:hover {
+            background: var(--light-bg);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .badge-success {
+            background: rgba(82, 196, 26, 0.1);
+            color: var(--success);
+        }
+
+        .badge-warning {
+            background: rgba(250, 173, 20, 0.1);
+            color: var(--warning);
+        }
+
+        .badge-danger {
+            background: rgba(255, 77, 79, 0.1);
+            color: var(--danger);
+        }
+
+        .badge-info {
+            background: rgba(77, 216, 232, 0.1);
+            color: var(--secondary);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .stat-card-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--accent);
+            margin: 10px 0;
+        }
+
+        .stat-card-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+
+        .modal-footer {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .alert-success {
+            background: rgba(82, 196, 26, 0.1);
+            color: var(--success);
+            border-left: 4px solid var(--success);
+        }
+
+        .alert-warning {
+            background: rgba(250, 173, 20, 0.1);
+            color: var(--warning);
+            border-left: 4px solid var(--warning);
+        }
+
+        .alert-danger {
+            background: rgba(255, 77, 79, 0.1);
+            color: var(--danger);
+            border-left: 4px solid var(--danger);
+        }
+
+        /* Login Page */
+        .login-container {
+            display: flex;
+            height: 100vh;
+            background: linear-gradient(135deg, var(--primary) 0%, #2a3f5f 100%);
+        }
+
+        .login-left {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .login-right {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 400px;
+            padding: 40px;
+        }
+
+        .login-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            color: var(--primary);
+            text-align: center;
+        }
+
+        .role-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .role-btn {
+            padding: 20px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .role-btn:hover,
+        .role-btn.active {
+            border-color: var(--accent);
+            background: rgba(255, 107, 53, 0.05);
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .layout {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 60px;
+                height: calc(100vh - 60px);
+                width: 250px;
+                transform: translateX(-100%);
+                z-index: 500;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .toggle-sidebar {
+                display: block;
+            }
+
+            .topbar {
+                order: -1;
+                position: sticky;
+                top: 0;
+                z-index: 100;
+            }
+
+            .main-content {
+                order: 0;
+            }
+
+            .content {
+                padding: 15px;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .role-selector {
+                grid-template-columns: 1fr;
+            }
+
+            .login-container {
+                flex-direction: column;
+            }
+
+            .login-left {
+                display: none;
+            }
+
+            .login-box {
+                max-width: 100%;
+            }
+        }
+
+        /* Utility Classes */
+        .text-center {
+            text-align: center;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .mt-20 {
+            margin-top: 20px;
+        }
+
+        .mb-20 {
+            margin-bottom: 20px;
+        }
+
+        .flex {
+            display: flex;
+            gap: 10px;
+        }
+
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .flex-col {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .gap-10 {
+            gap: 10px;
+        }
+
+        .gap-20 {
+            gap: 20px;
+        }
+
+        .w-full {
+            width: 100%;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Course Cards */
+        .course-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .course-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 4px 16px rgba(255, 107, 53, 0.15);
+        }
+
+        .course-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        .course-num {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .course-status {
+            font-size: 12px;
+        }
+
+        .course-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .course-progress {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        const { createApp, ref, reactive, computed, watch, onMounted, onUnmounted } = Vue;
+        const { createRouter, createWebHashHistory, useRouter, useRoute } = VueRouter;
+        const { createSupabaseClient, isSupabaseReady, AuthService, DatabaseService } = window.AppServices;
+
+        // ===== SUPABASE 配置 =====
+        // 请在 app-config.js 中填入你自己的 Supabase 项目信息
+        const supabase = createSupabaseClient(window.APP_CONFIG, window.supabase);
+
+        // ===== Auth State Management =====
+        const currentUser = ref(null);
+        const userProfile = ref(null);
+        const authInitialized = ref(false);
+        let authInitPromise = null;
+        const isSupabaseConfigured = computed(() => isSupabaseReady(window.APP_CONFIG));
+
+        const COURSE_PROGRESS_PERCENT = {
+            not_started: 0,
+            in_progress: 50,
+            completed: 100
+        };
+
+        const TASK_STATUS_LABELS = {
+            pending: '待完成',
+            submitted: '已提交',
+            scored: '已评分'
+        };
+
+        function toDateInputValue(value) {
+            if (!value) return '-';
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? '-' : date.toISOString().slice(0, 10);
+        }
+
+        function getCourseProgressPercent(status) {
+            return COURSE_PROGRESS_PERCENT[status] ?? 0;
+        }
+
+        function mapTaskStatus(status) {
+            return TASK_STATUS_LABELS[status] || '待完成';
+        }
+
+        function mapEvaluationStatus(status) {
+            const labels = {
+                pending: '待提交',
+                mentor_reviewed: '带教已评',
+                admin_reviewed: '管理员已审',
+                completed: '已完成'
+            };
+            return labels[status] || '处理中';
+        }
+
+        function getDaysToConfirm(joinDate) {
+            if (!joinDate) return 30;
+            const baseDate = new Date(joinDate);
+            if (Number.isNaN(baseDate.getTime())) return 30;
+
+            const targetDate = new Date(baseDate);
+            targetDate.setDate(targetDate.getDate() + 30);
+            return Math.max(Math.ceil((targetDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)), 0);
+        }
+
+        function getLastNDates(count) {
+            return Array.from({ length: count }, (_, index) => {
+                const date = new Date();
+                date.setHours(0, 0, 0, 0);
+                date.setDate(date.getDate() - (count - index - 1));
+                return date;
+            });
+        }
+
+        function formatShortDateLabel(date) {
+            return `${date.getMonth() + 1}/${date.getDate()}`;
+        }
+
+        function buildDailyCounts(dates, events) {
+            return dates.map((date) => {
+                const start = new Date(date);
+                const end = new Date(date);
+                end.setDate(end.getDate() + 1);
+
+                return events.filter((value) => {
+                    if (!value) return false;
+                    const eventDate = new Date(value);
+                    return !Number.isNaN(eventDate.getTime()) && eventDate >= start && eventDate < end;
+                }).length;
+            });
+        }
+
+        async function syncUserProfile(authUser) {
+            if (!authUser || !isSupabaseConfigured.value) {
+                userProfile.value = null;
+                return;
+            }
+
+            try {
+                userProfile.value = await AuthService.fetchProfile(supabase, authUser.id);
+            } catch (error) {
+                console.error('User profile sync error:', error);
+                userProfile.value = null;
+            }
+        }
+
+        // 初始化认证
+        async function initAuth() {
+            if (authInitPromise) {
+                return authInitPromise;
+            }
+
+            authInitPromise = (async () => {
+                if (!isSupabaseConfigured.value) {
+                    authInitialized.value = true;
+                    currentUser.value = null;
+                    userProfile.value = null;
+                    return;
+                }
+                try {
+                    const session = await AuthService.getSession(supabase);
+                    if (session) {
+                        currentUser.value = session.user;
+                        await syncUserProfile(session.user);
+                    }
+                } catch (error) {
+                    console.error('Auth initialization error:', error);
+                } finally {
+                    authInitialized.value = true;
+                }
+            })();
+
+            try {
+                await authInitPromise;
+            } finally {
+                authInitPromise = null;
+            }
+        }
+
+        // 监听认证状态变化
+        AuthService.onAuthStateChange(supabase, async (event, session) => {
+            if (session) {
+                currentUser.value = session.user;
+                await syncUserProfile(session.user);
+            } else {
+                currentUser.value = null;
+                userProfile.value = null;
+            }
+            authInitialized.value = true;
+        });
+
+        // ==================== Initial Data ====================
+        const { courses: DEFAULT_COURSES, exams: DEFAULT_EXAMS, tasks: DEFAULT_TASKS } = window.AppDefaultData;
+        const {
+            resources: FALLBACK_RESOURCES,
+            workflows: FALLBACK_WORKFLOWS,
+            coursewares: FALLBACK_COURSEWARES,
+            archives: FALLBACK_ARCHIVES,
+            pilots: FALLBACK_PILOTS
+        } = window.AppFallbackData;
+
+        const catalogState = reactive({
+            courses: DEFAULT_COURSES,
+            exams: DEFAULT_EXAMS,
+            tasks: DEFAULT_TASKS,
+            source: 'local'
+        });
+
+        async function loadCatalogData() {
+            if (!isSupabaseConfigured.value) {
+                catalogState.courses = DEFAULT_COURSES;
+                catalogState.exams = DEFAULT_EXAMS;
+                catalogState.tasks = DEFAULT_TASKS;
+                catalogState.source = 'local';
+                return;
+            }
+
+            try {
+                const [courseRows, taskRows, examRows] = await Promise.all([
+                    DatabaseService.list(supabase, 'course_catalog', {
+                        select: 'id, title, description, topics, sort_order',
+                        filters: [{ type: 'order', column: 'sort_order', ascending: true }]
+                    }),
+                    DatabaseService.list(supabase, 'task_catalog', {
+                        select: 'id, course_id, title, description, points, sort_order',
+                        filters: [{ type: 'order', column: 'sort_order', ascending: true }]
+                    }),
+                    DatabaseService.list(supabase, 'exam_question_bank', {
+                        select: 'role_name, question_order, question, options, correct_index',
+                        filters: [
+                            { type: 'order', column: 'role_name', ascending: true },
+                            { type: 'order', column: 'question_order', ascending: true }
+                        ]
+                    })
+                ]);
+
+                if (!courseRows.length || !taskRows.length || !examRows.length) {
+                    throw new Error('Catalog tables are empty.');
+                }
+
+                catalogState.courses = courseRows.map((row) => ({
+                    id: row.id,
+                    title: row.title,
+                    description: row.description,
+                    topics: Array.isArray(row.topics) ? row.topics : []
+                }));
+
+                catalogState.tasks = taskRows.map((row) => ({
+                    id: row.id,
+                    courseId: row.course_id,
+                    title: row.title,
+                    description: row.description,
+                    points: row.points
+                }));
+
+                catalogState.exams = examRows.reduce((acc, row, index) => {
+                    if (!acc[row.role_name]) {
+                        acc[row.role_name] = [];
+                    }
+
+                    acc[row.role_name].push({
+                        id: row.question_order || index + 1,
+                        question: row.question,
+                        options: Array.isArray(row.options) ? row.options : [],
+                        correct: row.correct_index
+                    });
+                    return acc;
+                }, {});
+
+                catalogState.source = 'supabase';
+            } catch (error) {
+                console.warn('Catalog load fallback:', error.message || error);
+                catalogState.courses = DEFAULT_COURSES;
+                catalogState.exams = DEFAULT_EXAMS;
+                catalogState.tasks = DEFAULT_TASKS;
+                catalogState.source = 'local';
+            }
+        }
+
+        watch(
+            () => isSupabaseConfigured.value,
+            () => {
+                loadCatalogData();
+            },
+            { immediate: true }
+        );
+
+        // ==================== Login Component ====================
+        const LoginView = {
+            template: `
+                <div class="login-container">
+                    <div class="login-left">
+                        <div>
+                            <h1 style="font-size: 48px; margin-bottom: 20px;">SOP管理系统</h1>
+                            <p style="font-size: 18px; opacity: 0.9;">全流程数字化管理新人入职</p>
+                        </div>
+                    </div>
+                    <div class="login-right">
+                        <!-- Supabase 配置检查提示 -->
+                        <div v-if="!isSupabaseConfigured" style="background: #fff7e6; border: 1px solid #ffc069; border-radius: 8px; padding: 15px; margin-bottom: 20px; color: #ad6800;">
+                            <strong>⚠️ Supabase 未配置</strong><br>
+                            请在 app-config.js 中填入你的 Supabase 项目信息
+                        </div>
+
+                        <div class="login-box">
+                            <div class="login-title">{{ showRegister ? '注 册' : '登 录' }}</div>
+
+                            <!-- Login Form -->
+                            <div v-if="!showRegister">
+                                <div class="form-group">
+                                    <label class="form-label">邮箱</label>
+                                    <input v-model="loginForm.email" class="form-input" type="email" placeholder="请输入邮箱">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">密码</label>
+                                    <input v-model="loginForm.password" class="form-input" type="password" placeholder="请输入密码">
+                                </div>
+                                <div v-if="loginError" style="color: var(--danger); font-size: 12px; margin-bottom: 15px;">{{ loginError }}</div>
+                                <button @click="handleLogin" :disabled="isLoading" class="btn btn-primary w-full" style="font-size: 16px; padding: 12px;">{{ isLoading ? '登录中...' : '登 录' }}</button>
+                                <div style="text-align: center; margin-top: 15px;">
+                                    <button @click="showRegister = true" class="btn btn-text" style="font-size: 12px;">首次注册？</button>
+                                </div>
+                            </div>
+
+                            <!-- Register Form -->
+                            <div v-else>
+                                <div class="form-group">
+                                    <label class="form-label">邮箱</label>
+                                    <input v-model="registerForm.email" class="form-input" type="email" placeholder="请输入邮箱">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">密码</label>
+                                    <input v-model="registerForm.password" class="form-input" type="password" placeholder="请输入密码（至少6位）">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">姓名</label>
+                                    <input v-model="registerForm.name" class="form-input" type="text" placeholder="请输入您的姓名">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">工号</label>
+                                    <input v-model="registerForm.empId" class="form-input" type="text" placeholder="请输入您的工号">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">岗位级别</label>
+                                    <select v-model="registerForm.roleLevel" class="form-input" style="height: 40px;">
+                                        <option value="intern">实习生</option>
+                                        <option value="assistant">运营助理</option>
+                                        <option value="specialist">运营专员</option>
+                                        <option value="lead">运营组长</option>
+                                        <option value="manager">运营主管</option>
+                                    </select>
+                                </div>
+                                <div v-if="registerError" style="color: var(--danger); font-size: 12px; margin-bottom: 15px;">{{ registerError }}</div>
+                                <button @click="handleRegister" :disabled="isLoading" class="btn btn-primary w-full" style="font-size: 16px; padding: 12px;">{{ isLoading ? '注册中...' : '注 册' }}</button>
+                                <div style="text-align: center; margin-top: 15px;">
+                                    <button @click="showRegister = false" class="btn btn-text" style="font-size: 12px;">返回登录</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const router = useRouter();
+                const showRegister = ref(false);
+                const isLoading = ref(false);
+                const loginError = ref('');
+                const registerError = ref('');
+
+                const loginForm = reactive({
+                    email: localStorage.getItem('lastEmail') || '',
+                    password: ''
+                });
+
+                const registerForm = reactive({
+                    email: '',
+                    password: '',
+                    name: '',
+                    empId: '',
+                    roleLevel: 'assistant'
+                });
+
+                const handleLogin = async () => {
+                    loginError.value = '';
+                    if (!loginForm.email || !loginForm.password) {
+                        loginError.value = '请输入邮箱和密码';
+                        return;
+                    }
+
+                    isLoading.value = true;
+                    try {
+                        const authUser = await AuthService.login(supabase, {
+                            email: loginForm.email,
+                            password: loginForm.password
+                        });
+
+                        localStorage.setItem('lastEmail', loginForm.email);
+                        currentUser.value = authUser;
+                        await syncUserProfile(authUser);
+                        router.push('/dashboard');
+                    } catch (error) {
+                        loginError.value = error.message || '登录失败，请重试';
+                    } finally {
+                        isLoading.value = false;
+                    }
+                };
+
+                const handleRegister = async () => {
+                    registerError.value = '';
+                    if (!registerForm.email || !registerForm.password || !registerForm.name || !registerForm.empId) {
+                        registerError.value = '请填写所有必填项';
+                        return;
+                    }
+
+                    if (registerForm.password.length < 6) {
+                        registerError.value = '密码至少需要6位';
+                        return;
+                    }
+
+                    isLoading.value = true;
+                    try {
+                        const authUser = await AuthService.registerAuth(supabase, {
+                            email: registerForm.email,
+                            password: registerForm.password
+                        });
+
+                        await AuthService.createUserProfile(supabase, {
+                            auth_id: authUser.id,
+                            email: registerForm.email,
+                            name: registerForm.name,
+                            emp_id: registerForm.empId,
+                            role_level: registerForm.roleLevel,
+                            role: 'trainee'
+                        });
+
+                        registerError.value = '';
+                        alert('注册成功！请使用邮箱和密码登录');
+                        showRegister.value = false;
+                        loginForm.email = registerForm.email;
+                        loginForm.password = '';
+                        registerForm.email = '';
+                        registerForm.password = '';
+                        registerForm.name = '';
+                        registerForm.empId = '';
+                    } catch (error) {
+                        registerError.value = '注册失败，请重试';
+                    } finally {
+                        isLoading.value = false;
+                    }
+                };
+
+                return {
+                    showRegister,
+                    isLoading,
+                    loginError,
+                    registerError,
+                    loginForm,
+                    registerForm,
+                    handleLogin,
+                    handleRegister,
+                    isSupabaseConfigured
+                };
+            }
+        };
+
+        const DeploymentSetupView = {
+            template: `
+                <div class="login-container">
+                    <div class="login-left">
+                        <div>
+                            <h1 style="font-size: 42px; margin-bottom: 20px;">系统尚未完成上线配置</h1>
+                            <p style="font-size: 18px; opacity: 0.9; line-height: 1.8;">当前站点已经部署，但还没有注入真实 Supabase 配置。为避免员工看到半可用页面，系统已自动进入部署保护模式。</p>
+                        </div>
+                    </div>
+                    <div class="login-right">
+                        <div class="login-box" style="max-width: 560px;">
+                            <div class="login-title" style="letter-spacing: 0;">上线阻塞项</div>
+                            <div style="display: grid; gap: 12px; color: var(--text-secondary); line-height: 1.8;">
+                                <div style="padding: 14px 16px; border-radius: 10px; background: #fff7e6; border: 1px solid #ffd591; color: #ad6800;">
+                                    <strong>当前配置来源：</strong>{{ configSourceText }}
+                                </div>
+                                <div style="padding: 14px 16px; border-radius: 10px; background: #fff1f0; border: 1px solid #ffa39e;">
+                                    <strong>1. 注入真实 SUPABASE_URL / SUPABASE_ANON_KEY</strong><br>
+                                    可通过 <code>runtime-config.js</code>、<code>app-config.js</code> 或环境变量生成方式完成。
+                                </div>
+                                <div style="padding: 14px 16px; border-radius: 10px; background: #f6ffed; border: 1px solid #b7eb8f;">
+                                    <strong>2. 执行数据库脚本</strong><br>
+                                    先执行 <code>setup.sql</code>，再按需要执行 <code>seed_data.sql</code> 与目录迁移。
+                                </div>
+                                <div style="padding: 14px 16px; border-radius: 10px; background: #f9f0ff; border: 1px solid #d3adf7;">
+                                    <strong>3. 重新跑发布准备</strong><br>
+                                    推荐执行 <code>SUPABASE_URL=... SUPABASE_ANON_KEY=... RELEASE_TARGET=production node prepare-release.js</code>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 20px; padding: 16px; border-radius: 10px; background: #fafafa; border: 1px solid var(--border);">
+                                <div style="font-weight: 600; margin-bottom: 10px;">建议上线顺序</div>
+                                <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.9;">
+                                    <div>1. 在 Supabase 中执行 <code>setup.sql</code></div>
+                                    <div>2. 生成真实 <code>runtime-config.js</code></div>
+                                    <div>3. 执行 <code>node preflight-check.js</code> 或 <code>node prepare-release.js</code></div>
+                                    <div>4. 预检通过后再开放员工登录</div>
+                                </div>
+                            </div>
+
+                            <div v-if="releaseSummary.loaded" style="margin-top: 20px; padding: 16px; border-radius: 10px; background: #fafafa; border: 1px solid var(--border);">
+                                <div class="flex-between" style="margin-bottom: 10px; gap: 12px; align-items: center;">
+                                    <div>
+                                        <div style="font-weight: 600;">最近发布准备</div>
+                                        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">{{ releaseSummary.target || '未命名环境' }} · {{ releaseSummary.generatedAt || '暂无时间' }}</div>
+                                    </div>
+                                    <span class="badge" :class="releaseSummary.preflightPassed ? 'badge-success' : 'badge-warning'">{{ releaseSummary.preflightPassed ? '预检通过' : '预检未通过' }}</span>
+                                </div>
+                                <div v-if="releaseSummary.blockers.length" style="display: grid; gap: 10px;">
+                                    <div v-for="item in releaseSummary.blockers" :key="item.title" style="padding: 12px 14px; border-radius: 10px; background: #fff1f0; border: 1px solid #ffa39e;">
+                                        <div style="font-weight: 600;">{{ item.title }}</div>
+                                        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">{{ item.detail }}</div>
+                                    </div>
+                                </div>
+                                <div v-if="releaseSummary.nextSteps.length" style="margin-top: 14px;">
+                                    <div style="font-weight: 600; margin-bottom: 8px;">建议下一步</div>
+                                    <div v-for="(item, index) in releaseSummary.nextSteps" :key="item" style="font-size: 12px; color: var(--text-secondary); line-height: 1.8;">
+                                        {{ index + 1 }}. {{ item }}
+                                    </div>
+                                </div>
+                                <div v-if="releaseSummary.suggestedCommand" style="margin-top: 14px; padding: 12px 14px; border-radius: 10px; background: #fafafa; border: 1px solid var(--border);">
+                                    <div style="font-weight: 600; margin-bottom: 8px;">推荐命令</div>
+                                    <code style="font-size: 12px; white-space: pre-wrap; word-break: break-all;">{{ releaseSummary.suggestedCommand }}</code>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const configSourceText = computed(() => (window.APP_CONFIG_META?.sources || ['defaults']).join(' + '));
+                const releaseSummary = reactive({
+                    loaded: false,
+                    target: '',
+                    generatedAt: '',
+                    preflightPassed: false,
+                    blockers: [],
+                    nextSteps: [],
+                    suggestedCommand: ''
+                });
+
+                onMounted(async () => {
+                    try {
+                        const response = await fetch(`./release-manifest.json?t=${Date.now()}`, { cache: 'no-store' });
+                        if (!response.ok) {
+                            throw new Error(`manifest status ${response.status}`);
+                        }
+                        const manifest = await response.json();
+                        releaseSummary.loaded = true;
+                        releaseSummary.target = manifest.release_target || '';
+                        releaseSummary.generatedAt = manifest.generated_at || '';
+                        releaseSummary.preflightPassed = Boolean(manifest.preflight_passed);
+                        releaseSummary.blockers = Array.isArray(manifest.blockers) ? manifest.blockers : [];
+                        releaseSummary.nextSteps = Array.isArray(manifest.next_steps) ? manifest.next_steps : [];
+                        releaseSummary.suggestedCommand = manifest.suggested_command || '';
+                    } catch (error) {
+                        releaseSummary.loaded = false;
+                    }
+                });
+
+                return {
+                    configSourceText,
+                    releaseSummary
+                };
+            }
+        };
+
+        // ==================== Dashboard Component ====================
+        const DashboardView = {
+            template: `
+                <div>
+                    <div class="flex-between" style="margin-bottom: 20px;">
+                        <h1>仪表盘</h1>
+                    </div>
+
+                    <div v-if="userRole === 'admin'" class="admin-dashboard">
+                        <div class="grid">
+                            <div class="stat-card">
+                                <div class="stat-card-label">团队总人数</div>
+                                <div class="stat-card-value">{{ stats.totalUsers }}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-card-label">在培人数</div>
+                                <div class="stat-card-value">{{ stats.inTraining }}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-card-label">本月转正</div>
+                                <div class="stat-card-value">{{ stats.confirmThisMonth }}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-card-label">考试通过率</div>
+                                <div class="stat-card-value">{{ stats.passRate }}%</div>
+                            </div>
+                        </div>
+
+                        <div class="grid">
+                            <div class="card" style="grid-column: 1 / -1;">
+                                <div class="card-title">学习进度分布</div>
+                                <canvas id="progressChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="grid">
+                            <div class="card">
+                                <div class="card-title">近7天活跃度</div>
+                                <canvas id="activityChart"></canvas>
+                            </div>
+                            <div class="card">
+                                <div class="card-title">待审批事项</div>
+                                <div style="padding: 20px;">
+                                    <div v-for="item in pendingApprovals" :key="item.id" style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border);">
+                                        <div style="font-weight: 600;">{{ item.title }}</div>
+                                        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">{{ item.waitText }}</div>
+                                        <div style="font-size: 12px; color: var(--accent); margin-top: 5px;">{{ item.actionHint }}</div>
+                                        <button class="btn btn-text" style="font-size: 12px; margin-top: 6px;" @click="goToRoute(item.route)">前往处理</button>
+                                    </div>
+                                    <div v-if="!pendingApprovals.length" style="color: var(--text-secondary);">当前没有待审批提醒</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-title">上线准备自检</div>
+                            <div style="padding: 20px;">
+                                <div class="flex-between" style="margin-bottom: 16px;">
+                                    <div style="font-weight: 600;">当前状态</div>
+                                    <span class="badge" :class="goLiveReadiness.ready ? 'badge-success' : 'badge-warning'">
+                                        {{ goLiveReadiness.ready ? '基本就绪' : '仍需补齐' }}
+                                    </span>
+                                </div>
+                                <div v-for="item in goLiveReadiness.items" :key="item.label" style="padding: 12px 0; border-bottom: 1px solid var(--border);">
+                                    <div class="flex-between" style="align-items: center; gap: 16px;">
+                                        <div>
+                                            <div style="font-weight: 600;">{{ item.label }}</div>
+                                            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">{{ item.detail }}</div>
+                                        </div>
+                                        <span class="badge" :class="item.ok ? 'badge-success' : 'badge-warning'">{{ item.ok ? '通过' : '待处理' }}</span>
+                                    </div>
+                                </div>
+                                <div v-if="goLiveReadiness.suspiciousCount > 0" style="margin-top: 14px; padding: 12px 14px; border-radius: 10px; background: rgba(250, 173, 20, 0.12); color: var(--text-primary);">
+                                    检测到 {{ goLiveReadiness.suspiciousCount }} 条可疑展示记录，建议优先核对“{{ goLiveReadiness.suspiciousModule || '系统诊断' }}”相关数据。
+                                </div>
+                                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 14px;">
+                                    建议结合 [GO_LIVE_CHECKLIST.md](/Users/guojiangwei/人才SOP/GO_LIVE_CHECKLIST.md) 与 [DEPLOY_WEBSITE.md](/Users/guojiangwei/人才SOP/DEPLOY_WEBSITE.md) 做最终上线核对。
+                                </div>
+                                <button class="btn btn-text" style="margin-top: 12px;" @click="goToRoute('/system-health')">查看完整诊断</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-else-if="userRole === 'mentor'" class="mentor-dashboard">
+                        <div class="grid">
+                            <div class="stat-card">
+                                <div class="stat-card-label">我的学员数</div>
+                                <div class="stat-card-value">{{ stats.myTraineeCount }}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-card-label">待评分任务</div>
+                                <div class="stat-card-value">{{ stats.pendingScoreTasks }}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-card-label">本周跟踪完成</div>
+                                <div class="stat-card-value">{{ stats.weeklyCheckDone }}</div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-title">我的学员进度</div>
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>学员姓名</th>
+                                        <th>岗位</th>
+                                        <th>课程完成</th>
+                                        <th>考试成绩</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="trainee in mentorTrainees" :key="trainee.id">
+                                        <td>{{ trainee.name }}</td>
+                                        <td>{{ trainee.roleLevel }}</td>
+                                        <td>{{ trainee.courseProgress }}/7</td>
+                                        <td>{{ trainee.examScore || '-' }}</td>
+                                        <td>
+                                            <button class="btn btn-text" style="font-size: 12px;">查看详情</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="card" style="margin-top: 20px;">
+                            <div class="card-title">最近通知</div>
+                            <div style="padding: 20px;">
+                                <div v-for="item in recentNotifications" :key="item.id" style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border);">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                        <span class="badge badge-info">{{ item.typeLabel }}</span>
+                                        <div style="font-weight: 600;">{{ item.title }}</div>
+                                    </div>
+                                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">{{ item.content }}</div>
+                                    <div style="font-size: 12px; color: var(--accent); margin-top: 5px;">{{ item.actionHint }}</div>
+                                    <button v-if="item.route" class="btn btn-text" style="font-size: 12px; margin-top: 6px;" @click="goToRoute(item.route)">查看处理</button>
+                                </div>
+                                <div v-if="!recentNotifications.length" style="color: var(--text-secondary);">暂时没有新的通知</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-else class="trainee-dashboard">
+                        <div class="grid">
+                            <div class="stat-card">
+                                <div class="stat-card-label">课程进度</div>
+                                <div class="stat-card-value">{{ stats.myProgress }}/7</div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" :style="{ width: (stats.myProgress / 7 * 100) + '%' }"></div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-card-label">考试成绩</div>
+                                <div class="stat-card-value" :style="{ color: stats.myExamScore >= 60 ? 'var(--success)' : 'var(--danger)' }">
+                                    {{ stats.myExamScore || '-' }}
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-card-label">距转正</div>
+                                <div class="stat-card-value">{{ stats.daysToConfirm }}</div>
+                                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">天</div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-title">下一个任务</div>
+                            <div v-if="nextTask" style="padding: 20px;">
+                                <h3 style="margin-bottom: 10px;">{{ nextTask.title }}</h3>
+                                <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 15px;">{{ nextTask.description }}</p>
+                                <button class="btn btn-primary" @click="goToTask(nextTask.id)">开始任务</button>
+                            </div>
+                            <div v-else style="padding: 20px; text-align: center; color: var(--text-secondary);">
+                                所有任务已完成！
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-title">最近通知</div>
+                            <div style="padding: 20px;">
+                                <div v-for="item in recentNotifications" :key="item.id" style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border);">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                        <span class="badge badge-info">{{ item.typeLabel }}</span>
+                                        <div style="font-weight: 600;">{{ item.title }}</div>
+                                    </div>
+                                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">{{ item.content }}</div>
+                                    <div style="font-size: 12px; color: var(--accent); margin-top: 5px;">{{ item.actionHint }}</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">{{ item.created_at }}</div>
+                                    <button v-if="item.route" class="btn btn-text" style="font-size: 12px; margin-top: 6px;" @click="goToRoute(item.route)">查看处理</button>
+                                </div>
+                                <div v-if="!recentNotifications.length" style="color: var(--text-secondary);">暂时没有新的通知</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const router = useRouter();
+                const userRole = computed(() => {
+                    return userProfile.value?.role || 'trainee';
+                });
+                const progressDistribution = reactive({
+                    completed: 0,
+                    inProgress: 0,
+                    notStarted: catalogState.courses.length
+                });
+                const activityLabels = ref(getLastNDates(7).map(formatShortDateLabel));
+                const activityData = ref(new Array(7).fill(0));
+                let progressChart = null;
+                let activityChart = null;
+
+                const stats = reactive({
+                    totalUsers: 0,
+                    inTraining: 0,
+                    confirmThisMonth: 0,
+                    passRate: 0,
+                    myTraineeCount: 0,
+                    pendingScoreTasks: 0,
+                    weeklyCheckDone: 0,
+                    myProgress: 0,
+                    myExamScore: 0,
+                    daysToConfirm: 30
+                });
+
+                const mentorTrainees = ref([]);
+                const nextTask = ref(catalogState.tasks[0] || null);
+                const pendingApprovals = ref([]);
+                const recentNotifications = ref([]);
+                const goLiveReadiness = reactive({
+                    ready: false,
+                    items: [],
+                    suspiciousCount: 0,
+                    suspiciousModule: ''
+                });
+                const configSourcesText = computed(() => {
+                    const sources = window.APP_CONFIG_META?.sources || ['defaults'];
+                    return sources.join(' + ');
+                });
+                const notificationTypeLabels = {
+                    approval: '审批提醒',
+                    workflow: '流程更新',
+                    mentor: '带教跟进',
+                    kpi: 'KPI更新',
+                    courseware: '课件更新'
+                };
+                const getNotificationActionHint = (type) => {
+                    if (type === 'approval') return '建议优先进入评估页处理审批。';
+                    if (type === 'workflow') return '建议检查当前流程阶段和下一步安排。';
+                    if (type === 'mentor') return '建议查看带教记录并补充反馈。';
+                    if (type === 'kpi') return '建议确认 KPI 得分与改进项。';
+                    if (type === 'courseware') return '建议查看最新课件版本并同步学习计划。';
+                    return '建议进入对应页面查看详情。';
+                };
+                const updateGoLiveReadiness = async () => {
+                    const countSuspiciousRows = (rows, fields) => {
+                        if (!Array.isArray(rows) || !Array.isArray(fields)) return 0;
+                        return rows.filter((item) => fields.some((field) => {
+                            const text = typeof item[field] === 'string' ? item[field].trim() : '';
+                            if (!text) return false;
+                            return text.includes('仓库装箱单') || /^[{}]+$/.test(text);
+                        })).length;
+                    };
+                    if (!isSupabaseConfigured.value) {
+                        goLiveReadiness.suspiciousCount = 0;
+                        goLiveReadiness.suspiciousModule = '';
+                        goLiveReadiness.items = [
+                            { label: 'Supabase 配置', detail: `当前配置来源：${configSourcesText.value}。仍是占位值，需先填入真实项目地址和匿名密钥。`, ok: false },
+                            { label: '目录数据', detail: `当前目录来源：${catalogState.source === 'supabase' ? 'Supabase' : '本地兜底'}。`, ok: catalogState.source === 'supabase' },
+                            { label: '业务留痕', detail: '未连接数据库前，通知与审批留痕无法形成真实试运行记录。', ok: false }
+                        ];
+                        goLiveReadiness.ready = false;
+                        return;
+                    }
+
+                    try {
+                        const [userCount, coursewareCount, approvalCount, notificationCount, workflowRows, coursewareRows, archiveRows, pilotRows] = await Promise.all([
+                            DatabaseService.count(supabase, 'users'),
+                            DatabaseService.count(supabase, 'courseware_library'),
+                            DatabaseService.count(supabase, 'approval_logs'),
+                            DatabaseService.count(supabase, 'notifications'),
+                            DatabaseService.list(supabase, 'talent_workflow_cases', { select: 'candidate_name' }),
+                            DatabaseService.list(supabase, 'courseware_library', { select: 'title' }),
+                            DatabaseService.list(supabase, 'archive_records', { select: 'title' }),
+                            DatabaseService.list(supabase, 'pilot_runs', { select: 'name' })
+                        ]);
+                        const suspiciousModules = [
+                            { label: '人才流程', value: countSuspiciousRows(workflowRows, ['candidate_name']) },
+                            { label: '课件版本库', value: countSuspiciousRows(coursewareRows, ['title']) },
+                            { label: '历史归档中心', value: countSuspiciousRows(archiveRows, ['title']) },
+                            { label: '试运行台账', value: countSuspiciousRows(pilotRows, ['name']) }
+                        ];
+                        const priorityModule = suspiciousModules.find((item) => item.value > 0);
+                        goLiveReadiness.suspiciousCount = suspiciousModules.reduce((total, item) => total + item.value, 0);
+                        goLiveReadiness.suspiciousModule = priorityModule?.label || '';
+                        goLiveReadiness.items = [
+                            { label: 'Supabase 配置', detail: `前端已连接真实 Supabase，当前配置来源：${configSourcesText.value}。`, ok: true },
+                            { label: '目录数据', detail: `当前目录来源：${catalogState.source === 'supabase' ? 'Supabase' : '本地兜底'}。建议正式上线前切到数据库目录。`, ok: catalogState.source === 'supabase' },
+                            { label: '基础账号与业务数据', detail: `当前已有 ${userCount} 个用户，${coursewareCount} 条课件版本记录。`, ok: userCount > 0 && coursewareCount > 0 },
+                            { label: '通知与审批留痕', detail: `当前累计 ${notificationCount} 条通知，${approvalCount} 条审批日志。`, ok: notificationCount > 0 && approvalCount > 0 },
+                            { label: '异常内容风险', detail: goLiveReadiness.suspiciousCount > 0 ? `检测到 ${goLiveReadiness.suspiciousCount} 条可疑展示记录，建议优先检查 ${goLiveReadiness.suspiciousModule || '系统诊断'}。` : '当前未发现明显的脏数据展示风险。', ok: goLiveReadiness.suspiciousCount === 0 }
+                        ];
+                        goLiveReadiness.ready = goLiveReadiness.items.every((item) => item.ok);
+                    } catch (error) {
+                        console.error('Go-live readiness load error:', error);
+                        goLiveReadiness.suspiciousCount = 0;
+                        goLiveReadiness.suspiciousModule = '';
+                        goLiveReadiness.items = [
+                            { label: '数据就绪检查', detail: '读取上线准备数据失败，请检查 Supabase 表结构和权限策略。', ok: false }
+                        ];
+                        goLiveReadiness.ready = false;
+                    }
+                };
+
+                const renderCharts = () => {
+                    setTimeout(() => {
+                        if (progressChart) progressChart.destroy();
+                        if (activityChart) activityChart.destroy();
+
+                        const progressCanvas = document.getElementById('progressChart');
+                        if (progressCanvas) {
+                            progressChart = new Chart(progressCanvas, {
+                                type: 'doughnut',
+                                data: {
+                                    labels: ['已完成', '进行中', '未开始'],
+                                    datasets: [{
+                                        data: [
+                                            progressDistribution.completed,
+                                            progressDistribution.inProgress,
+                                            progressDistribution.notStarted
+                                        ],
+                                        backgroundColor: ['#52c41a', '#faad14', '#ff4d4f']
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    plugins: { legend: { position: 'bottom' } }
+                                }
+                            });
+                        }
+
+                        const activityCanvas = document.getElementById('activityChart');
+                        if (activityCanvas) {
+                            activityChart = new Chart(activityCanvas, {
+                                type: 'line',
+                                data: {
+                                    labels: activityLabels.value,
+                                    datasets: [{
+                                        label: '活跃次数',
+                                        data: activityData.value,
+                                        borderColor: '#FF6B35',
+                                        backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                                        tension: 0.4
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    plugins: { legend: { display: false } }
+                                }
+                            });
+                        }
+                    }, 100);
+                };
+
+                const loadAdminDashboard = async () => {
+                    stats.totalUsers = await DatabaseService.count(supabase, 'users');
+                    stats.inTraining = await DatabaseService.count(supabase, 'users', {
+                        filters: [
+                            { type: 'eq', column: 'role', value: 'trainee' },
+                            { type: 'eq', column: 'status', value: 'active' }
+                        ]
+                    });
+
+                    const monthStart = new Date();
+                    monthStart.setDate(1);
+                    monthStart.setHours(0, 0, 0, 0);
+                    stats.confirmThisMonth = await DatabaseService.count(supabase, 'evaluations', {
+                        filters: [
+                            { type: 'eq', column: 'status', value: 'completed' },
+                            { type: 'gte', column: 'created_at', value: monthStart.toISOString() }
+                        ]
+                    });
+
+                    const examRows = await DatabaseService.list(supabase, 'exam_records', {
+                        select: 'score, created_at'
+                    });
+                    const passedCount = examRows.filter((row) => row.score >= 60).length;
+                    stats.passRate = examRows.length ? Math.round((passedCount / examRows.length) * 100) : 0;
+
+                    const progressRows = await DatabaseService.list(supabase, 'course_progress', {
+                        select: 'status'
+                    });
+                    progressDistribution.completed = progressRows.filter((row) => row.status === 'completed').length;
+                    progressDistribution.inProgress = progressRows.filter((row) => row.status === 'in_progress').length;
+                    progressDistribution.notStarted = progressRows.filter((row) => row.status === 'not_started').length;
+
+                    const recentDates = getLastNDates(7);
+                    activityLabels.value = recentDates.map(formatShortDateLabel);
+                    const recentTasks = await DatabaseService.list(supabase, 'task_submissions', {
+                        select: 'submit_time',
+                        filters: [{ type: 'gte', column: 'submit_time', value: recentDates[0].toISOString() }]
+                    });
+                    const recentEvaluations = await DatabaseService.list(supabase, 'evaluations', {
+                        select: 'created_at',
+                        filters: [{ type: 'gte', column: 'created_at', value: recentDates[0].toISOString() }]
+                    });
+                    const approvalRows = await DatabaseService.list(supabase, 'approval_logs', {
+                        select: '*',
+                        filters: [
+                            { type: 'eq', column: 'module', value: 'evaluation' },
+                            { type: 'order', column: 'created_at', ascending: false },
+                            { type: 'limit', column: 'created_at', value: 5 }
+                        ]
+                    });
+                    pendingApprovals.value = approvalRows.map((row) => ({
+                        id: row.id,
+                        title: row.detail?.summary || '待处理审批',
+                        waitText: `${toDateInputValue(row.created_at)} 更新`,
+                        route: '/evaluation',
+                        actionHint: '建议优先进入评估页处理审批。'
+                    }));
+                    await updateGoLiveReadiness();
+                    activityData.value = buildDailyCounts(recentDates, [
+                        ...examRows.map((row) => row.created_at),
+                        ...recentTasks.map((row) => row.submit_time),
+                        ...recentEvaluations.map((row) => row.created_at)
+                    ]);
+                };
+
+                const loadMentorDashboard = async () => {
+                    const trainees = await DatabaseService.list(supabase, 'users', {
+                        select: 'id, name, role_level',
+                        filters: [{ type: 'eq', column: 'mentor_id', value: userProfile.value.id }]
+                    });
+                    const traineeIds = trainees.map((row) => row.id);
+                    stats.myTraineeCount = trainees.length;
+                    stats.pendingScoreTasks = traineeIds.length
+                        ? await DatabaseService.count(supabase, 'task_submissions', {
+                            filters: [
+                                { type: 'eq', column: 'status', value: 'submitted' },
+                                { type: 'in', column: 'user_id', value: traineeIds }
+                            ]
+                        })
+                        : 0;
+
+                    const weekStart = new Date();
+                    weekStart.setHours(0, 0, 0, 0);
+                    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+                    stats.weeklyCheckDone = await DatabaseService.count(supabase, 'mentor_logs', {
+                        filters: [
+                            { type: 'eq', column: 'mentor_id', value: userProfile.value.id },
+                            { type: 'gte', column: 'created_at', value: weekStart.toISOString() }
+                        ]
+                    });
+
+                    if (!traineeIds.length) {
+                        mentorTrainees.value = [];
+                        return;
+                    }
+
+                    const progressRows = await DatabaseService.list(supabase, 'course_progress', {
+                        select: 'user_id, status',
+                        filters: [{ type: 'in', column: 'user_id', value: traineeIds }]
+                    });
+                    const examRows = await DatabaseService.list(supabase, 'exam_records', {
+                        select: 'user_id, score, created_at',
+                        filters: [
+                            { type: 'in', column: 'user_id', value: traineeIds },
+                            { type: 'order', column: 'created_at', ascending: false }
+                        ]
+                    });
+
+                    mentorTrainees.value = trainees.map((trainee) => ({
+                        id: trainee.id,
+                        name: trainee.name,
+                        roleLevel: trainee.role_level || '-',
+                        courseProgress: progressRows.filter((row) =>
+                            row.user_id === trainee.id && row.status === 'completed'
+                        ).length,
+                        examScore: examRows.find((row) => row.user_id === trainee.id)?.score || null
+                    }));
+
+                    if (userProfile.value?.id) {
+                        const notices = await DatabaseService.list(supabase, 'notifications', {
+                            select: 'id, type, title, content, read, created_at',
+                            filters: [
+                                { type: 'eq', column: 'user_id', value: userProfile.value.id },
+                                { type: 'order', column: 'created_at', ascending: false },
+                                { type: 'limit', column: 'created_at', value: 3 }
+                            ]
+                        });
+                        recentNotifications.value = notices.map((item) => ({
+                            ...item,
+                            created_at: toDateInputValue(item.created_at),
+                            route: item.type === 'approval' ? '/evaluation' : item.type === 'workflow' ? '/workflow' : item.type === 'mentor' ? '/mentor' : item.type === 'kpi' ? '/kpi' : '',
+                            typeLabel: notificationTypeLabels[item.type] || '系统通知',
+                            actionHint: getNotificationActionHint(item.type)
+                        }));
+                    }
+                };
+
+                const loadTraineeDashboard = async () => {
+                    const progressRows = await DatabaseService.list(supabase, 'course_progress', {
+                        select: 'course_id, status',
+                        filters: [{ type: 'eq', column: 'user_id', value: userProfile.value.id }]
+                    });
+                    stats.myProgress = progressRows.filter((row) => row.status === 'completed').length;
+
+                    const examRows = await DatabaseService.list(supabase, 'exam_records', {
+                        select: 'score, created_at',
+                        filters: [
+                            { type: 'eq', column: 'user_id', value: userProfile.value.id },
+                            { type: 'order', column: 'created_at', ascending: false },
+                            { type: 'limit', column: 'created_at', value: 1 }
+                        ]
+                    });
+                    stats.myExamScore = examRows[0]?.score || 0;
+                    stats.daysToConfirm = getDaysToConfirm(userProfile.value.join_date);
+
+                    const submissions = await DatabaseService.list(supabase, 'task_submissions', {
+                        select: 'task_id, status',
+                        filters: [{ type: 'eq', column: 'user_id', value: userProfile.value.id }]
+                    });
+                    const submittedTaskMap = new Map(submissions.map((item) => [item.task_id, item.status]));
+                    nextTask.value = catalogState.tasks.find((task) => {
+                        const status = submittedTaskMap.get(task.id);
+                        return !status || status === 'pending';
+                    }) || null;
+
+                    const notices = await DatabaseService.list(supabase, 'notifications', {
+                        select: 'id, type, title, content, read, created_at',
+                        filters: [
+                            { type: 'eq', column: 'user_id', value: userProfile.value.id },
+                            { type: 'order', column: 'created_at', ascending: false },
+                            { type: 'limit', column: 'created_at', value: 3 }
+                        ]
+                    });
+                    recentNotifications.value = notices.map((item) => ({
+                        ...item,
+                        created_at: toDateInputValue(item.created_at),
+                        route: item.type === 'approval' ? '/evaluation' : item.type === 'workflow' ? '/workflow' : item.type === 'mentor' ? '/mentor' : item.type === 'kpi' ? '/kpi' : '',
+                        typeLabel: notificationTypeLabels[item.type] || '系统通知',
+                        actionHint: getNotificationActionHint(item.type)
+                    }));
+                };
+
+                const loadDashboard = async () => {
+                    if (!isSupabaseConfigured.value || !userProfile.value) {
+                        return;
+                    }
+
+                    try {
+                        if (userRole.value === 'admin') {
+                            await loadAdminDashboard();
+                            renderCharts();
+                        } else if (userRole.value === 'mentor') {
+                            await loadMentorDashboard();
+                        } else {
+                            await loadTraineeDashboard();
+                        }
+                    } catch (error) {
+                        console.error('Dashboard load error:', error);
+                    }
+                };
+
+                const goToTask = (taskId) => {
+                    router.push(`/tasks/${taskId}`);
+                };
+                const goToRoute = (path) => {
+                    if (path) router.push(path);
+                };
+
+                watch(
+                    () => [isSupabaseConfigured.value, userProfile.value?.id, userRole.value],
+                    loadDashboard,
+                    { immediate: true }
+                );
+
+                onUnmounted(() => {
+                    if (progressChart) progressChart.destroy();
+                    if (activityChart) activityChart.destroy();
+                });
+
+                return {
+                    userRole,
+                    stats,
+                    mentorTrainees,
+                    nextTask,
+                    pendingApprovals,
+                    recentNotifications,
+                    goLiveReadiness,
+                    configSourcesText,
+                    goToTask,
+                    goToRoute
+                };
+            }
+        };
+
+        // ==================== Courses Component ====================
+        const CoursesView = {
+            template: `
+                <div>
+                    <div class="flex-between" style="margin-bottom: 20px;">
+                        <h1>培训中心</h1>
+                        <div v-if="isAdmin" class="flex">
+                            <button class="btn btn-primary" @click="showAddCourseModal = true">+ 添加课程</button>
+                        </div>
+                    </div>
+
+                    <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+                        <div v-for="course in courses" :key="course.id" class="course-card" @click="goCourseDetail(course.id)">
+                            <div class="course-header">
+                                <div class="course-num">第{{ course.id }}课</div>
+                                <span class="badge" :class="getCourseStatusClass(course.id)">
+                                    {{ getCourseStatus(course.id) }}
+                                </span>
+                            </div>
+                            <div class="course-title">{{ course.title }}</div>
+                            <p style="font-size: 13px; color: var(--text-secondary);">{{ course.description }}</p>
+                            <div class="course-progress">
+                                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">进度</div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" :style="{ width: getCourseProgress(course.id) + '%' }"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const router = useRouter();
+                const isAdmin = computed(() => {
+                    return userProfile.value?.role === 'admin';
+                });
+                const userRole = computed(() => userProfile.value?.role || 'trainee');
+
+                const courses = computed(() => catalogState.courses);
+                const showAddCourseModal = ref(false);
+                const courseProgressMap = reactive({});
+
+                const loadCourseProgress = async () => {
+                    Object.keys(courseProgressMap).forEach((key) => {
+                        delete courseProgressMap[key];
+                    });
+
+                    if (!isSupabaseConfigured.value || !userProfile.value) {
+                        courses.value.forEach((course, index) => {
+                            courseProgressMap[course.id] = [0, 30, 60, 100, 0, 15, 45][index];
+                        });
+                        return;
+                    }
+
+                    try {
+                        if (userRole.value === 'trainee') {
+                            const rows = await DatabaseService.list(supabase, 'course_progress', {
+                                select: 'course_id, status',
+                                filters: [{ type: 'eq', column: 'user_id', value: userProfile.value.id }]
+                            });
+                            rows.forEach((row) => {
+                                courseProgressMap[row.course_id] = getCourseProgressPercent(row.status);
+                            });
+                            return;
+                        }
+
+                        let targetUserIds = [];
+                        if (userRole.value === 'admin') {
+                            const trainees = await DatabaseService.list(supabase, 'users', {
+                                select: 'id',
+                                filters: [{ type: 'eq', column: 'role', value: 'trainee' }]
+                            });
+                            targetUserIds = trainees.map((row) => row.id);
+                        } else if (userRole.value === 'mentor') {
+                            const trainees = await DatabaseService.list(supabase, 'users', {
+                                select: 'id',
+                                filters: [{ type: 'eq', column: 'mentor_id', value: userProfile.value.id }]
+                            });
+                            targetUserIds = trainees.map((row) => row.id);
+                        }
+
+                        if (!targetUserIds.length) {
+                            return;
+                        }
+
+                        const rows = await DatabaseService.list(supabase, 'course_progress', {
+                            select: 'course_id, status',
+                            filters: [{ type: 'in', column: 'user_id', value: targetUserIds }]
+                        });
+
+                        courses.value.forEach((course) => {
+                            const courseRows = rows.filter((row) => row.course_id === course.id);
+                            if (!courseRows.length) {
+                                courseProgressMap[course.id] = 0;
+                                return;
+                            }
+
+                            const total = courseRows.reduce((sum, row) => sum + getCourseProgressPercent(row.status), 0);
+                            courseProgressMap[course.id] = Math.round(total / courseRows.length);
+                        });
+                    } catch (error) {
+                        console.error('Course progress load error:', error);
+                    }
+                };
+
+                const getCourseProgress = (courseId) => {
+                    return courseProgressMap[courseId] || 0;
+                };
+
+                const getCourseStatus = (courseId) => {
+                    const progress = getCourseProgress(courseId);
+                    if (progress === 0) return '未开始';
+                    if (progress === 100) return '已完成';
+                    return '学习中';
+                };
+
+                const getCourseStatusClass = (courseId) => {
+                    const status = getCourseStatus(courseId);
+                    if (status === '已完成') return 'badge-success';
+                    if (status === '学习中') return 'badge-warning';
+                    return 'badge-info';
+                };
+
+                const goCourseDetail = (courseId) => {
+                    router.push(`/courses/${courseId}`);
+                };
+
+                watch(
+                    () => [isSupabaseConfigured.value, userProfile.value?.id, userRole.value],
+                    loadCourseProgress,
+                    { immediate: true }
+                );
+
+                return {
+                    courses,
+                    isAdmin,
+                    showAddCourseModal,
+                    getCourseProgress,
+                    getCourseStatus,
+                    getCourseStatusClass,
+                    goCourseDetail
+                };
+            }
+        };
+
+        // ==================== Course Detail Component ====================
+        const CourseDetailView = {
+            template: `
+                <div>
+                    <div class="flex-between" style="margin-bottom: 20px;">
+                        <div>
+                            <button class="btn btn-text" @click="goBack" style="margin-bottom: 10px;">← 返回</button>
+                            <h1>{{ course.title }}</h1>
+                        </div>
+                        <div v-if="canMarkComplete && !isCompleted" class="flex">
+                            <button class="btn btn-primary" @click="markAsComplete">标记为已完成</button>
+                        </div>
+                    </div>
+
+                    <div class="grid" style="grid-template-columns: 1fr 350px;">
+                        <div>
+                            <div class="card">
+                                <div class="card-title">学习要点</div>
+                                <ul style="list-style: none; padding: 0;">
+                                    <li v-for="(topic, index) in course.topics" :key="index" style="padding: 10px 0; border-bottom: 1px solid var(--border);">
+                                        <input type="checkbox" :id="'topic-' + index" style="margin-right: 8px;">
+                                        <label :for="'topic-' + index" style="cursor: pointer;">{{ topic }}</label>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-title">课程内容</div>
+                                <div style="line-height: 1.8; color: var(--text-secondary); font-size: 14px;">
+                                    <p>本课程详细讲解了{{ course.title }}的各个方面，通过理论讲解、案例分析、实际操作相结合的方式，帮助新员工快速掌握相关知识和技能。</p>
+                                    <p>课程包含以下内容：</p>
+                                    <ul>
+                                        <li v-for="(topic, index) in course.topics" :key="index">{{ topic }}</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-title">关键知识点</div>
+                                <div style="padding: 20px; background: var(--light-bg); border-radius: 6px; font-size: 14px; line-height: 1.8;">
+                                    <p>1. 掌握基本概念：理解{{ course.title }}的核心概念和原理</p>
+                                    <p>2. 学会应用：在实际工作中灵活运用所学知识</p>
+                                    <p>3. 形成习惯：建立良好的工作习惯和标准流程</p>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-title">相关资源</div>
+                                <div style="padding: 20px;">
+                                    <div style="margin-bottom: 15px;">
+                                        <a href="#" style="color: var(--accent); text-decoration: none; font-weight: 600;">
+                                            📥 {{ course.title }}-完整PPT.pdf
+                                        </a>
+                                    </div>
+                                    <div style="margin-bottom: 15px;">
+                                        <a href="#" style="color: var(--accent); text-decoration: none; font-weight: 600;">
+                                            📥 学习笔记模板.docx
+                                        </a>
+                                    </div>
+                                    <div>
+                                        <a href="#" style="color: var(--accent); text-decoration: none; font-weight: 600;">
+                                            📥 相关视频教程.mp4
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="card">
+                                <div class="card-title">学习进度</div>
+                                <div style="padding: 20px; text-align: center;">
+                                    <div style="font-size: 48px; font-weight: 700; color: var(--accent); margin-bottom: 10px;">{{ progress }}%</div>
+                                    <div class="progress-bar" style="margin-bottom: 20px;">
+                                        <div class="progress-fill" :style="{ width: progress + '%' }"></div>
+                                    </div>
+                                    <div style="font-size: 12px; color: var(--text-secondary);">
+                                        预计完成时间：2小时
+                                    </div>
+                                </div>
+                                <div style="padding-top: 20px; border-top: 1px solid var(--border);">
+                                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">开始时间</div>
+                                    <div style="font-size: 14px; font-weight: 600; margin-bottom: 15px;">{{ startedAt }}</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">完成时间</div>
+                                    <div v-if="isCompleted" style="font-size: 14px; font-weight: 600;">{{ completedAt }}</div>
+                                    <div v-else style="font-size: 14px; color: var(--text-secondary);">进行中...</div>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-title">相关任务</div>
+                                <div style="padding: 20px;">
+                                    <div v-for="task in relatedTasks" :key="task.id" style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border);">
+                                        <div style="font-weight: 600; font-size: 14px; margin-bottom: 5px;">{{ task.title }}</div>
+                                        <div style="font-size: 12px; color: var(--text-secondary);">{{ task.description }}</div>
+                                        <div style="font-size: 12px; color: var(--accent); margin-top: 5px; font-weight: 600;">+ {{ task.points }}分</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const router = useRouter();
+                const route = useRoute();
+                const courseId = parseInt(route.params.id);
+                const course = computed(() => catalogState.courses.find(c => c.id === courseId) || {
+                    id: courseId,
+                    title: '课程加载中',
+                    description: '',
+                    topics: []
+                });
+                const progress = ref(0);
+                const isCompleted = ref(false);
+                const startedAt = ref('-');
+                const completedAt = ref('-');
+                const canMarkComplete = computed(() => userProfile.value?.role === 'trainee');
+
+                const relatedTasks = computed(() => {
+                    return catalogState.tasks.filter(t => t.courseId === courseId).slice(0, 3);
+                });
+
+                const loadCourseDetailProgress = async () => {
+                    progress.value = 0;
+                    isCompleted.value = false;
+                    startedAt.value = '-';
+                    completedAt.value = '-';
+
+                    if (!isSupabaseConfigured.value || !userProfile.value || userProfile.value.role !== 'trainee') {
+                        progress.value = 60;
+                        return;
+                    }
+
+                    try {
+                        const rows = await DatabaseService.list(supabase, 'course_progress', {
+                            select: 'status, start_time, complete_time',
+                            filters: [
+                                { type: 'eq', column: 'user_id', value: userProfile.value.id },
+                                { type: 'eq', column: 'course_id', value: courseId },
+                                { type: 'limit', column: 'course_id', value: 1 }
+                            ]
+                        });
+                        const row = rows[0];
+                        if (!row) return;
+
+                        progress.value = getCourseProgressPercent(row.status);
+                        isCompleted.value = row.status === 'completed';
+                        startedAt.value = toDateInputValue(row.start_time);
+                        completedAt.value = toDateInputValue(row.complete_time);
+                    } catch (error) {
+                        console.error('Course detail load error:', error);
+                    }
+                };
+
+                const goBack = () => {
+                    router.push('/courses');
+                };
+
+                const markAsComplete = async () => {
+                    if (!isSupabaseConfigured.value || !userProfile.value || userProfile.value.role !== 'trainee') {
+                        isCompleted.value = true;
+                        progress.value = 100;
+                        alert('课程已标记为完成！');
+                        return;
+                    }
+
+                    try {
+                        const now = new Date().toISOString();
+                        await DatabaseService.upsert(supabase, 'course_progress', [{
+                            user_id: userProfile.value.id,
+                            course_id: courseId,
+                            status: 'completed',
+                            start_time: now,
+                            complete_time: now
+                        }], {
+                            upsertOptions: { onConflict: 'user_id,course_id' }
+                        });
+
+                        isCompleted.value = true;
+                        progress.value = 100;
+                        startedAt.value = toDateInputValue(now);
+                        completedAt.value = toDateInputValue(now);
+                        alert('课程已标记为完成！');
+                    } catch (error) {
+                        console.error('Course completion error:', error);
+                        alert('保存失败，请稍后重试');
+                    }
+                };
+
+                watch(
+                    () => [isSupabaseConfigured.value, userProfile.value?.id, route.params.id],
+                    loadCourseDetailProgress,
+                    { immediate: true }
+                );
+
+                return {
+                    course,
+                    progress,
+                    isCompleted,
+                    startedAt,
+                    completedAt,
+                    canMarkComplete,
+                    relatedTasks,
+                    goBack,
+                    markAsComplete
+                };
+            }
+        };
+
+        // ==================== Exam Component ====================
+        const ExamView = {
+            template: `
+                <div>
+                    <h1 style="margin-bottom: 20px;">在线考试</h1>
+
+                    <div v-if="!examStarted" class="card">
+                        <div class="card-title">东南亚跨境电商女鞋运营 - 分岗位考试</div>
+                        <div style="padding: 20px;">
+                            <p style="margin-bottom: 25px; color: var(--text-secondary); line-height: 1.6;">请根据您的岗位选择对应试卷。每个岗位的考试难度和题型均有所不同，考试成绩需达到60分以上为通过。</p>
+                            <div v-if="lastExamRecord" style="background: var(--light-bg); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                                <div style="font-weight: 600; margin-bottom: 8px;">最近一次考试记录</div>
+                                <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.8;">
+                                    <div>岗位试卷：{{ lastExamRecord.role_level }}</div>
+                                    <div>成绩：{{ lastExamRecord.score }} 分</div>
+                                    <div>用时：{{ lastExamRecord.time_used }} 秒</div>
+                                    <div>时间：{{ lastExamRecord.created_at_label }}</div>
+                                </div>
+                            </div>
+                            <div class="flex-col gap-12">
+                                <div
+                                    v-for="role in roles"
+                                    :key="role"
+                                    style="border: 1px solid var(--border); border-radius: 6px; padding: 15px; cursor: pointer; transition: all 0.3s; display: flex; justify-content: space-between; align-items: center;"
+                                    @click="startExam(role)"
+                                    @mouseover="$event.currentTarget.style.backgroundColor = 'var(--light-bg)'"
+                                    @mouseout="$event.currentTarget.style.backgroundColor = 'transparent'">
+                                    <div>
+                                        <div style="font-weight: 600; margin-bottom: 4px;">{{ role }}</div>
+                                        <div style="font-size: 13px; color: var(--text-secondary);">{{ getRoleDescription(role) }}</div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <div style="font-size: 12px; color: var(--text-secondary);">{{ getRoleQuestionCount(role) }}题</div>
+                                        <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">{{ getRoleTime(role) }}分钟</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-else-if="!examFinished" class="card">
+                        <div class="card-title">{{ selectedRole }} - 试卷 ({{ currentQuestionIndex + 1 }}/{{ questions.length }})</div>
+                        <div style="padding: 20px;">
+                            <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+                                <h3 style="margin-bottom: 15px;">{{ currentQuestion.question }}</h3>
+                                <div class="flex-col gap-10">
+                                    <label v-for="(option, index) in currentQuestion.options" :key="index" style="display: flex; align-items: center; cursor: pointer;">
+                                        <input
+                                            type="radio"
+                                            :value="index"
+                                            v-model.number="answers[currentQuestionIndex]"
+                                            style="margin-right: 10px;">
+                                        <span>{{ option }}</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="flex-between">
+                                <button
+                                    @click="previousQuestion"
+                                    class="btn btn-text"
+                                    :disabled="currentQuestionIndex === 0">
+                                    ← 上一题
+                                </button>
+                                <div>
+                                    <span style="color: var(--text-secondary); font-size: 12px;">{{ currentQuestionIndex + 1 }}/{{ questions.length }}</span>
+                                </div>
+                                <button
+                                    @click="nextOrFinish"
+                                    class="btn btn-primary"
+                                    :disabled="isSaving">
+                                    {{ currentQuestionIndex === questions.length - 1 ? (isSaving ? '提交中...' : '提交答卷') : '下一题' }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-else class="card" style="max-width: 600px;">
+                        <div class="card-title text-center">考试完成</div>
+                        <div style="padding: 40px; text-align: center;">
+                            <div style="font-size: 48px; font-weight: 700; color: var(--accent); margin-bottom: 10px;">{{ examScore }}</div>
+                            <div style="font-size: 18px; font-weight: 600; margin-bottom: 30px;">
+                                <span v-if="examScore >= 60" style="color: var(--success);">恭喜！您已通过考试</span>
+                                <span v-else style="color: var(--danger);">遗憾，您未通过本次考试</span>
+                            </div>
+                            <div style="background: var(--light-bg); padding: 20px; border-radius: 6px; margin-bottom: 20px;">
+                                <div style="margin-bottom: 10px;">
+                                    <span style="color: var(--text-secondary); font-size: 14px;">正确率:</span>
+                                    <span style="font-weight: 600; margin-left: 10px;">{{ Math.round(examScore / 100 * questions.length) }}/{{ questions.length }}</span>
+                                </div>
+                                <div>
+                                    <span style="color: var(--text-secondary); font-size: 14px;">考试用时:</span>
+                                    <span style="font-weight: 600; margin-left: 10px;">{{ examTime }}秒</span>
+                                </div>
+                            </div>
+                            <div class="flex gap-10" style="justify-content: center;">
+                                <button @click="resetExam" class="btn btn-text">返回首页</button>
+                                <button @click="restartExam" class="btn btn-primary">重新考试</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const router = useRouter();
+                const roles = computed(() => Object.keys(catalogState.exams));
+                const selectedRole = ref('');
+                const questions = ref([]);
+                const currentQuestionIndex = ref(0);
+                const answers = ref([]);
+                const examStarted = ref(false);
+                const examFinished = ref(false);
+                const examScore = ref(0);
+                const examTime = ref(0);
+                const startTime = ref(0);
+                const isSaving = ref(false);
+                const lastExamRecord = ref(null);
+
+                const currentQuestion = computed(() => {
+                    return questions.value[currentQuestionIndex.value] || {};
+                });
+
+                const formatDateTimeLabel = (value) => {
+                    if (!value) return '-';
+                    const date = new Date(value);
+                    if (Number.isNaN(date.getTime())) return '-';
+                    return `${date.toISOString().slice(0, 10)} ${date.toTimeString().slice(0, 8)}`;
+                };
+
+                const loadLastExamRecord = async () => {
+                    lastExamRecord.value = null;
+
+                    if (!isSupabaseConfigured.value || !userProfile.value || userProfile.value.role !== 'trainee') {
+                        return;
+                    }
+
+                    try {
+                        const rows = await DatabaseService.list(supabase, 'exam_records', {
+                            select: 'role_level, score, time_used, created_at',
+                            filters: [
+                                { type: 'eq', column: 'user_id', value: userProfile.value.id },
+                                { type: 'order', column: 'created_at', ascending: false },
+                                { type: 'limit', column: 'created_at', value: 1 }
+                            ]
+                        });
+                        const row = rows[0];
+                        if (!row) return;
+
+                        lastExamRecord.value = {
+                            ...row,
+                            created_at_label: formatDateTimeLabel(row.created_at)
+                        };
+                    } catch (error) {
+                        console.error('Exam record load error:', error);
+                    }
+                };
+
+                const startExam = (role) => {
+                    selectedRole.value = role;
+                    questions.value = catalogState.exams[role] || [];
+                    answers.value = new Array(questions.value.length).fill(-1);
+                    currentQuestionIndex.value = 0;
+                    examStarted.value = true;
+                    examFinished.value = false;
+                    startTime.value = Date.now();
+                };
+
+                const previousQuestion = () => {
+                    if (currentQuestionIndex.value > 0) {
+                        currentQuestionIndex.value--;
+                    }
+                };
+
+                const nextOrFinish = async () => {
+                    if (currentQuestionIndex.value < questions.value.length - 1) {
+                        currentQuestionIndex.value++;
+                    } else {
+                        await finishExam();
+                    }
+                };
+
+                const finishExam = async () => {
+                    let correctCount = 0;
+                    for (let i = 0; i < questions.value.length; i++) {
+                        if (answers.value[i] === questions.value[i].correct) {
+                            correctCount++;
+                        }
+                    }
+                    const finalScore = Math.round((correctCount / questions.value.length) * 100);
+                    const finalTime = Math.round((Date.now() - startTime.value) / 1000);
+                    examScore.value = finalScore;
+                    examTime.value = finalTime;
+
+                    if (isSupabaseConfigured.value && userProfile.value && userProfile.value.role === 'trainee') {
+                        isSaving.value = true;
+                        try {
+                            await DatabaseService.upsert(supabase, 'exam_records', [{
+                                user_id: userProfile.value.id,
+                                role_level: selectedRole.value,
+                                score: finalScore,
+                                raw_score: correctCount,
+                                raw_total: questions.value.length,
+                                details: {
+                                    answers: answers.value,
+                                    question_count: questions.value.length
+                                },
+                                time_used: finalTime
+                            }]);
+                            await loadLastExamRecord();
+                        } catch (error) {
+                            console.error('Exam save error:', error);
+                            alert('考试成绩保存失败，请稍后重试');
+                        } finally {
+                            isSaving.value = false;
+                        }
+                    }
+                    examFinished.value = true;
+                };
+
+                const resetExam = () => {
+                    examStarted.value = false;
+                    examFinished.value = false;
+                    router.push('/dashboard');
+                };
+
+                const restartExam = () => {
+                    startExam(selectedRole.value);
+                };
+
+                const roleConfig = {
+                    '实习生': { desc: '基础平台认知、基本操作流程', count: 15, time: 45 },
+                    '运营助理': { desc: '商品上架、Listing优化、日常运营执行', count: 20, time: 60 },
+                    '运营专员': { desc: '全链路运营能力、推广投放、数据分析', count: 20, time: 75 },
+                    '运营组长': { desc: '团队管理、策略制定、跨平台协同', count: 15, time: 90 },
+                    '运营主管': { desc: '多平台统筹、团队绩效管理、预算把控', count: 15, time: 90 }
+                };
+
+                const getRoleDescription = (role) => roleConfig[role]?.desc || '';
+                const getRoleQuestionCount = (role) => roleConfig[role]?.count || 0;
+                const getRoleTime = (role) => roleConfig[role]?.time || 0;
+
+                watch(
+                    () => [isSupabaseConfigured.value, userProfile.value?.id],
+                    loadLastExamRecord,
+                    { immediate: true }
+                );
+
+                return {
+                    roles,
+                    selectedRole,
+                    questions,
+                    currentQuestion,
+                    currentQuestionIndex,
+                    answers,
+                    examStarted,
+                    examFinished,
+                    examScore,
+                    examTime,
+                    isSaving,
+                    lastExamRecord,
+                    startExam,
+                    previousQuestion,
+                    nextOrFinish,
+                    resetExam,
+                    restartExam,
+                    getRoleDescription,
+                    getRoleQuestionCount,
+                    getRoleTime
+                };
+            }
+        };
+
+        // ==================== Tasks Component ====================
+        const TasksView = {
+            template: `
+                <div>
+                    <div class="flex-between" style="margin-bottom: 20px;">
+                        <h1>实操任务</h1>
+                        <div class="flex">
+                            <button class="btn btn-text" @click="filterStatus = null" :style="{ color: !filterStatus ? 'var(--accent)' : 'var(--text-secondary)' }">全部</button>
+                            <button class="btn btn-text" @click="filterStatus = '待完成'" :style="{ color: filterStatus === '待完成' ? 'var(--accent)' : 'var(--text-secondary)' }">待完成</button>
+                            <button class="btn btn-text" @click="filterStatus = '已提交'" :style="{ color: filterStatus === '已提交' ? 'var(--accent)' : 'var(--text-secondary)' }">已提交</button>
+                            <button class="btn btn-text" @click="filterStatus = '已评分'" :style="{ color: filterStatus === '已评分' ? 'var(--accent)' : 'var(--text-secondary)' }">已评分</button>
+                        </div>
+                    </div>
+
+                    <div class="grid">
+                        <div v-for="task in filteredTasks" :key="task.id" class="card" style="cursor: pointer;" @click="goTaskDetail(task.id)">
+                            <div class="flex-between" style="margin-bottom: 10px;">
+                                <h3>{{ task.title }}</h3>
+                                <span class="badge" :class="getTaskStatusClass(task.id)">{{ getTaskStatus(task.id) }}</span>
+                            </div>
+                            <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 15px;">{{ task.description }}</p>
+                            <div class="flex-between">
+                                <div style="font-size: 12px; color: var(--text-secondary);">第{{ task.courseId }}课</div>
+                                <div style="font-weight: 600; color: var(--accent);">+ {{ task.points }}分</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const router = useRouter();
+                const filterStatus = ref(null);
+                const taskStatusMap = reactive({});
+                const userRole = computed(() => userProfile.value?.role || 'trainee');
+
+                const loadTaskStatuses = async () => {
+                    Object.keys(taskStatusMap).forEach((key) => {
+                        delete taskStatusMap[key];
+                    });
+
+                    if (!isSupabaseConfigured.value || !userProfile.value) {
+                        taskStatusMap[1] = '待完成';
+                        taskStatusMap[2] = '待完成';
+                        taskStatusMap[3] = '已提交';
+                        taskStatusMap[4] = '已评分';
+                        taskStatusMap[5] = '待完成';
+                        taskStatusMap[6] = '已评分';
+                        taskStatusMap[7] = '已提交';
+                        return;
+                    }
+
+                    try {
+                        let submissions = [];
+
+                        if (userRole.value === 'trainee') {
+                            submissions = await DatabaseService.list(supabase, 'task_submissions', {
+                                select: 'task_id, status',
+                                filters: [{ type: 'eq', column: 'user_id', value: userProfile.value.id }]
+                            });
+                        } else {
+                            let targetUserIds = [];
+                            if (userRole.value === 'admin') {
+                                const trainees = await DatabaseService.list(supabase, 'users', {
+                                    select: 'id',
+                                    filters: [{ type: 'eq', column: 'role', value: 'trainee' }]
+                                });
+                                targetUserIds = trainees.map((row) => row.id);
+                            } else if (userRole.value === 'mentor') {
+                                const trainees = await DatabaseService.list(supabase, 'users', {
+                                    select: 'id',
+                                    filters: [{ type: 'eq', column: 'mentor_id', value: userProfile.value.id }]
+                                });
+                                targetUserIds = trainees.map((row) => row.id);
+                            }
+
+                            if (targetUserIds.length) {
+                                submissions = await DatabaseService.list(supabase, 'task_submissions', {
+                                    select: 'task_id, status',
+                                    filters: [{ type: 'in', column: 'user_id', value: targetUserIds }]
+                                });
+                            }
+                        }
+
+                        const grouped = new Map();
+                        submissions.forEach((row) => {
+                            const currentStatus = grouped.get(row.task_id);
+                            if (row.status === 'scored' || !currentStatus) {
+                                grouped.set(row.task_id, row.status);
+                                return;
+                            }
+
+                            if (row.status === 'submitted' && currentStatus === 'pending') {
+                                grouped.set(row.task_id, row.status);
+                            }
+                        });
+
+                        catalogState.tasks.forEach((task) => {
+                            taskStatusMap[task.id] = mapTaskStatus(grouped.get(task.id));
+                        });
+                    } catch (error) {
+                        console.error('Task status load error:', error);
+                    }
+                };
+
+                const filteredTasks = computed(() => {
+                    return catalogState.tasks.filter(task => {
+                        if (!filterStatus.value) return true;
+                        return getTaskStatus(task.id) === filterStatus.value;
+                    });
+                });
+
+                const getTaskStatus = (taskId) => {
+                    return taskStatusMap[taskId] || '待完成';
+                };
+
+                const getTaskStatusClass = (taskId) => {
+                    const status = getTaskStatus(taskId);
+                    if (status === '已评分') return 'badge-success';
+                    if (status === '已提交') return 'badge-warning';
+                    return 'badge-info';
+                };
+
+                const goTaskDetail = (taskId) => {
+                    router.push(`/tasks/${taskId}`);
+                };
+
+                watch(
+                    () => [isSupabaseConfigured.value, userProfile.value?.id, userRole.value],
+                    loadTaskStatuses,
+                    { immediate: true }
+                );
+
+                return {
+                    filterStatus,
+                    filteredTasks,
+                    getTaskStatus,
+                    getTaskStatusClass,
+                    goTaskDetail
+                };
+            }
+        };
+
+        // ==================== Task Detail Component ====================
+        const TaskDetailView = {
+            template: `
+                <div>
+                    <div class="flex-between" style="margin-bottom: 20px;">
+                        <div>
+                            <button class="btn btn-text" @click="goBack" style="margin-bottom: 10px;">← 返回</button>
+                            <h1>{{ task.title }}</h1>
+                        </div>
+                        <span class="badge" :class="getTaskStatusClass()">{{ taskStatus }}</span>
+                    </div>
+
+                    <div class="grid" style="grid-template-columns: 1fr 350px;">
+                        <div>
+                            <div class="card">
+                                <div class="card-title">任务说明</div>
+                                <div style="padding: 20px; line-height: 1.8; color: var(--text-secondary);">
+                                    <p>{{ task.description }}</p>
+                                    <p style="margin-top: 15px;">该任务要求您在认真学习第{{ task.courseId }}课内容后，完成以下要求：</p>
+                                    <ul style="margin-top: 10px;">
+                                        <li>深入理解课程内容</li>
+                                        <li>结合实际工作进行思考</li>
+                                        <li>提交完整的任务说明</li>
+                                        <li>配合带教人进行讨论</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-title">评分标准</div>
+                                <table class="table" style="margin-top: 15px;">
+                                    <thead>
+                                        <tr>
+                                            <th>评分项</th>
+                                            <th>满分</th>
+                                            <th>您的得分</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>理解程度</td>
+                                            <td>40分</td>
+                                            <td>{{ taskStatus === '已评分' && score !== null ? Math.round(score * 0.4) + '分' : '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>完整性</td>
+                                            <td>30分</td>
+                                            <td>{{ taskStatus === '已评分' && score !== null ? Math.round(score * 0.3) + '分' : '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>实用性</td>
+                                            <td>30分</td>
+                                            <td>{{ taskStatus === '已评分' && score !== null ? Math.round(score * 0.3) + '分' : '-' }}</td>
+                                        </tr>
+                                        <tr style="background: var(--light-bg); font-weight: 600;">
+                                            <td>总分</td>
+                                            <td>100分</td>
+                                            <td>{{ taskStatus === '已评分' && score !== null ? score + '分' : '-' }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div v-if="taskStatus === '已评分'" class="card">
+                                <div class="card-title">评分意见</div>
+                                <div style="padding: 20px; background: var(--light-bg); border-radius: 6px;">
+                                    <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.8;">
+                                        任务完成很好！对第{{ task.courseId }}课的内容理解深入，提交的任务说明条理清晰、内容完整。希望继续保持这样的学习态度，争取完成后续所有任务。
+                                    </p>
+                                    <div style="margin-top: 15px; font-size: 12px; color: var(--text-secondary);">
+                                        评分人：{{ scorerName || '系统评分人' }} | 评分时间：{{ scoreTime || '-' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="card">
+                                <div class="card-title">任务信息</div>
+                                <div style="padding: 20px;">
+                                    <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+                                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">所属课程</div>
+                                        <div style="font-weight: 600;">第{{ task.courseId }}课</div>
+                                    </div>
+                                    <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+                                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">获得积分</div>
+                                        <div style="font-weight: 600; color: var(--accent);">{{ task.points }}分</div>
+                                    </div>
+                                    <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+                                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">状态</div>
+                                        <span class="badge" :class="getTaskStatusClass()">{{ taskStatus }}</span>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">提交截止</div>
+                                        <div style="font-weight: 600;">2024-02-15</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div v-if="canSubmit && taskStatus !== '已评分'" class="card">
+                                <div class="card-title">我的提交</div>
+                                <div style="padding: 20px;">
+                                    <textarea
+                                        v-model="submission"
+                                        class="form-textarea"
+                                        :disabled="taskStatus === '已提交'"
+                                        placeholder="请输入您的任务完成说明..."></textarea>
+                                    <button
+                                        @click="submitTask"
+                                        class="btn btn-primary w-full mt-20"
+                                        :disabled="taskStatus === '已提交'">
+                                        {{ taskStatus === '已提交' ? '已提交' : '提交任务' }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const router = useRouter();
+                const route = useRoute();
+                const taskId = parseInt(route.params.id);
+                const task = computed(() => catalogState.tasks.find(t => t.id === taskId) || {
+                    id: taskId,
+                    courseId: 0,
+                    title: '任务加载中',
+                    description: '',
+                    points: 0
+                });
+                const submission = ref('');
+                const score = ref(null);
+                const scorerName = ref('');
+                const scoreTime = ref('');
+                const taskStatus = ref('待完成');
+                const canSubmit = computed(() => userProfile.value?.role === 'trainee');
+
+                const loadTaskDetail = async () => {
+                    submission.value = '';
+                    score.value = null;
+                    scorerName.value = '';
+                    scoreTime.value = '';
+                    taskStatus.value = '待完成';
+
+                    if (!isSupabaseConfigured.value || !userProfile.value || userProfile.value.role !== 'trainee') {
+                        return;
+                    }
+
+                    try {
+                        const rows = await DatabaseService.list(supabase, 'task_submissions', {
+                            select: 'content, status, score, scorer_name, score_time',
+                            filters: [
+                                { type: 'eq', column: 'user_id', value: userProfile.value.id },
+                                { type: 'eq', column: 'task_id', value: taskId },
+                                { type: 'limit', column: 'task_id', value: 1 }
+                            ]
+                        });
+                        const row = rows[0];
+                        if (!row) return;
+
+                        submission.value = row.content || '';
+                        taskStatus.value = mapTaskStatus(row.status);
+                        score.value = row.score;
+                        scorerName.value = row.scorer_name || '';
+                        scoreTime.value = toDateInputValue(row.score_time);
+                    } catch (error) {
+                        console.error('Task detail load error:', error);
+                    }
+                };
+
+                const getTaskStatusClass = () => {
+                    if (taskStatus.value === '已评分') return 'badge-success';
+                    if (taskStatus.value === '已提交') return 'badge-warning';
+                    return 'badge-info';
+                };
+
+                const goBack = () => {
+                    router.push('/tasks');
+                };
+
+                const submitTask = async () => {
+                    if (!submission.value.trim()) {
+                        alert('请输入任务说明');
+                        return;
+                    }
+
+                    if (!isSupabaseConfigured.value || !userProfile.value || userProfile.value.role !== 'trainee') {
+                        taskStatus.value = '已提交';
+                        alert('任务已提交！等待评分中...');
+                        return;
+                    }
+
+                    try {
+                        await DatabaseService.upsert(supabase, 'task_submissions', [{
+                            user_id: userProfile.value.id,
+                            course_id: task.value.courseId,
+                            task_id: task.value.id,
+                            content: submission.value.trim(),
+                            status: 'submitted',
+                            submit_time: new Date().toISOString()
+                        }], {
+                            upsertOptions: { onConflict: 'user_id,task_id' }
+                        });
+
+                        taskStatus.value = '已提交';
+                        alert('任务已提交！等待评分中...');
+                    } catch (error) {
+                        console.error('Task submit error:', error);
+                        alert('提交失败，请稍后重试');
+                    }
+                };
+
+                watch(
+                    () => [isSupabaseConfigured.value, userProfile.value?.id, route.params.id],
+                    loadTaskDetail,
+                    { immediate: true }
+                );
+
+                return {
+                    task,
+                    taskStatus,
+                    submission,
+                    score,
+                    scorerName,
+                    scoreTime,
+                    canSubmit,
+                    getTaskStatusClass,
+                    goBack,
+                    submitTask
+                };
+            }
+        };
+
+        const MentorView = window.AppReviewViews.createMentorView({
+            ref,
+            reactive,
+            watch,
+            userProfile,
+            isSupabaseConfigured,
+            DatabaseService,
+            supabase,
+            toDateInputValue
+        });
+
+        const KPIView = window.AppReviewViews.createKPIView({
+            ref,
+            computed,
+            watch,
+            userProfile,
+            isSupabaseConfigured,
+            DatabaseService,
+            supabase
+        });
+
+        const EvaluationView = window.AppReviewViews.createEvaluationView({
+            ref,
+            reactive,
+            watch,
+            userProfile,
+            isSupabaseConfigured,
+            DatabaseService,
+            supabase,
+            toDateInputValue,
+            mapEvaluationStatus,
+            catalogState
+        });
+
+        const ResourcesView = window.AppSupportViews.createResourcesView({
+            ref,
+            computed,
+            fallbackResources: FALLBACK_RESOURCES
+        });
+
+        const AnalyticsView = window.AppSupportViews.createAnalyticsView({
+            ref,
+            reactive,
+            watch,
+            onUnmounted,
+            catalogState,
+            isSupabaseConfigured,
+            DatabaseService,
+            supabase,
+            toDateInputValue,
+            Chart
+        });
+
+        const NotificationsView = window.AppSupportViews.createNotificationsView({
+            ref,
+            computed,
+            watch,
+            onMounted,
+            onUnmounted,
+            useRouter,
+            userProfile,
+            isSupabaseConfigured,
+            DatabaseService,
+            supabase,
+            toDateInputValue
+        });
+
+        const ApprovalCenterView = window.AppSupportViews.createApprovalCenterView({
+            ref,
+            computed,
+            watch,
+            onMounted,
+            onUnmounted,
+            useRouter,
+            userProfile,
+            isSupabaseConfigured,
+            DatabaseService,
+            supabase,
+            toDateInputValue
+        });
+
+        const SystemHealthView = window.AppSupportViews.createSystemHealthView({
+            ref,
+            reactive,
+            computed,
+            watch,
+            onMounted,
+            onUnmounted,
+            useRouter,
+            catalogState,
+            userProfile,
+            isSupabaseConfigured,
+            DatabaseService,
+            supabase
+        });
+
+        const TalentWorkflowView = window.AppOperationalViews.createTalentWorkflowView({
+            ref,
+            reactive,
+            computed,
+            watch,
+            useRoute,
+            useRouter,
+            userProfile,
+            isSupabaseConfigured,
+            DatabaseService,
+            supabase,
+            fallbackWorkflows: FALLBACK_WORKFLOWS
+        });
+
+        const CoursewareView = window.AppOperationalViews.createCoursewareView({
+            ref,
+            reactive,
+            computed,
+            watch,
+            useRoute,
+            useRouter,
+            userProfile,
+            isSupabaseConfigured,
+            DatabaseService,
+            supabase,
+            fallbackCoursewares: FALLBACK_COURSEWARES,
+            toDateInputValue
+        });
+
+        const ArchiveView = window.AppOperationalViews.createArchiveView({
+            ref,
+            computed,
+            watch,
+            useRoute,
+            useRouter,
+            isSupabaseConfigured,
+            DatabaseService,
+            supabase,
+            fallbackArchives: FALLBACK_ARCHIVES,
+            toDateInputValue
+        });
+
+        const PilotRunView = window.AppOperationalViews.createPilotRunView({
+            ref,
+            reactive,
+            computed,
+            watch,
+            useRoute,
+            useRouter,
+            userProfile,
+            isSupabaseConfigured,
+            DatabaseService,
+            supabase,
+            fallbackPilots: FALLBACK_PILOTS
+        });
+
+        // ==================== Layout Component ====================
+        const AppLayout = {
+            template: `
+                <div class="layout">
+                    <div class="sidebar" :class="{ open: sidebarOpen }">
+                        <div class="sidebar-header">
+                            <div class="sidebar-title">SOP管理系统</div>
+                            <div class="sidebar-user">{{ currentUserName }}</div>
+                        </div>
+                        <nav class="sidebar-nav">
+                            <li v-for="route in visibleRoutes" :key="route.path">
+                                <router-link :to="route.path" class="sidebar-link" @click="sidebarOpen = false">
+                                    {{ route.label }}
+                                </router-link>
+                            </li>
+                            <li style="margin-top: auto; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                                <a href="#" class="sidebar-link" @click.prevent="handleLogout" style="color: rgba(255, 255, 255, 0.6);">
+                                    登出
+                                </a>
+                            </li>
+                        </nav>
+                    </div>
+
+                    <div class="main-content">
+                        <div class="topbar">
+                            <div class="topbar-left">
+                                <button class="toggle-sidebar" @click="sidebarOpen = !sidebarOpen">☰</button>
+                                <div class="breadcrumb">
+                                    <span>首页</span>
+                                    <span>/</span>
+                                    <span>{{ currentPageTitle }}</span>
+                                </div>
+                            </div>
+                            <div class="topbar-right">
+                                <div style="display: flex; align-items: center; gap: 15px;">
+                                    <button class="btn btn-text" style="position: relative; font-size: 12px;" @click="goToNotifications">
+                                        通知
+                                        <span v-if="unreadNotificationCount > 0" style="position: absolute; top: -6px; right: -10px; min-width: 18px; height: 18px; border-radius: 999px; background: var(--accent); color: white; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; padding: 0 5px;">
+                                            {{ unreadNotificationCount }}
+                                        </span>
+                                    </button>
+                                    <button v-if="showApprovalBadge" class="btn btn-text" style="position: relative; font-size: 12px;" @click="goToApprovals">
+                                        审批
+                                        <span v-if="pendingApprovalCount > 0" style="position: absolute; top: -6px; right: -10px; min-width: 18px; height: 18px; border-radius: 999px; background: var(--warning); color: white; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; padding: 0 5px;">
+                                            {{ pendingApprovalCount }}
+                                        </span>
+                                    </button>
+                                    <div style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                                        <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--success);" :style="{ background: supabaseStatus.color }"></span>
+                                        <span style="color: var(--text-secondary);">{{ supabaseStatus.text }}</span>
+                                    </div>
+                                    <div class="user-profile">
+                                        <div class="avatar">{{ currentUserNameShort }}</div>
+                                        <span>{{ currentUserName }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="content">
+                            <router-view></router-view>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const router = useRouter();
+                const route = useRoute();
+                const sidebarOpen = ref(false);
+
+                const currentUserName = computed(() => userProfile.value?.name || '用户');
+                const currentUserNameShort = computed(() => userProfile.value?.name?.charAt(0) || 'U');
+                const userRole = computed(() => userProfile.value?.role || 'trainee');
+                const unreadNotificationCount = ref(0);
+                const pendingApprovalCount = ref(0);
+                let topbarRefreshTimer = null;
+                const supabaseStatus = computed(() => {
+                    if (!isSupabaseConfigured.value) {
+                        return { color: 'var(--danger)', text: '未配置' };
+                    }
+                    return { color: 'var(--success)', text: '已连接' };
+                });
+                const showApprovalBadge = computed(() => ['admin', 'mentor'].includes(userRole.value));
+
+                const allRoutes = [
+                    { path: '/dashboard', label: '仪表盘', roles: ['admin', 'mentor', 'trainee'] },
+                    { path: '/courses', label: '培训中心', roles: ['admin', 'mentor', 'trainee'] },
+                    { path: '/exam', label: '在线考试', roles: ['admin', 'trainee'] },
+                    { path: '/tasks', label: '实操任务', roles: ['admin', 'mentor', 'trainee'] },
+                    { path: '/workflow', label: '人才筛选', roles: ['admin', 'mentor'] },
+                    { path: '/courseware', label: '课件版本', roles: ['admin', 'mentor', 'trainee'] },
+                    { path: '/mentor', label: '带教跟踪', roles: ['admin', 'mentor'] },
+                    { path: '/kpi', label: 'KPI考核', roles: ['admin', 'mentor', 'trainee'] },
+                    { path: '/evaluation', label: '转正评估', roles: ['admin', 'mentor'] },
+                    { path: '/archive', label: '历史归档', roles: ['admin', 'mentor'] },
+                    { path: '/pilot', label: '试运行', roles: ['admin'] },
+                    { path: '/resources', label: '资源中心', roles: ['admin', 'mentor', 'trainee'] },
+                    { path: '/notifications', label: '通知中心', roles: ['admin', 'mentor', 'trainee'] },
+                    { path: '/approvals', label: '审批中心', roles: ['admin', 'mentor'] },
+                    { path: '/system-health', label: '系统诊断', roles: ['admin'] },
+                    { path: '/analytics', label: '数据分析', roles: ['admin'] }
+                ];
+
+                const visibleRoutes = computed(() => {
+                    return allRoutes.filter(r => r.roles.includes(userRole.value));
+                });
+
+                const pageRoutes = {
+                    '/dashboard': '仪表盘',
+                    '/courses': '培训中心',
+                    '/exam': '在线考试',
+                    '/tasks': '实操任务',
+                    '/workflow': '人才筛选',
+                    '/courseware': '课件版本',
+                    '/mentor': '带教跟踪',
+                    '/kpi': 'KPI考核',
+                    '/evaluation': '转正评估',
+                    '/archive': '历史归档',
+                    '/pilot': '试运行',
+                    '/resources': '资源中心',
+                    '/notifications': '通知中心',
+                    '/approvals': '审批中心',
+                    '/system-health': '系统诊断',
+                    '/analytics': '数据分析'
+                };
+
+                const currentPageTitle = computed(() => {
+                    return pageRoutes[route.path] || '系统';
+                });
+                const loadTopbarCounts = async () => {
+                    if (!isSupabaseConfigured.value || !userProfile.value) {
+                        unreadNotificationCount.value = 0;
+                        pendingApprovalCount.value = 0;
+                        return;
+                    }
+                    try {
+                        unreadNotificationCount.value = await DatabaseService.count(supabase, 'notifications', {
+                            filters: [
+                                { type: 'eq', column: 'user_id', value: userProfile.value.id },
+                                { type: 'eq', column: 'read', value: false }
+                            ]
+                        });
+                        if (showApprovalBadge.value) {
+                            pendingApprovalCount.value = await DatabaseService.count(supabase, 'approval_logs', {
+                                filters: [
+                                    { type: 'eq', column: 'module', value: 'evaluation' }
+                                ]
+                            });
+                        } else {
+                            pendingApprovalCount.value = 0;
+                        }
+                    } catch (error) {
+                        console.error('Topbar count load error:', error);
+                    }
+                };
+                const refreshTopbarCountsOnFocus = () => {
+                    loadTopbarCounts();
+                };
+                const refreshTopbarCountsOnVisible = () => {
+                    if (document.visibilityState === 'visible') {
+                        loadTopbarCounts();
+                    }
+                };
+                const refreshTopbarCountsOnDataUpdate = () => {
+                    loadTopbarCounts();
+                };
+                const goToNotifications = () => {
+                    router.push('/notifications');
+                };
+                const goToApprovals = () => {
+                    router.push('/approvals');
+                };
+
+                const handleLogout = async () => {
+                    await AuthService.logout(supabase);
+                    currentUser.value = null;
+                    userProfile.value = null;
+                    router.push('/');
+                };
+
+                watch(
+                    () => [isSupabaseConfigured.value, userProfile.value?.id, route.path],
+                    loadTopbarCounts,
+                    { immediate: true }
+                );
+                onMounted(() => {
+                    topbarRefreshTimer = setInterval(loadTopbarCounts, 30000);
+                    window.addEventListener('focus', refreshTopbarCountsOnFocus);
+                    window.addEventListener('app-data-refresh', refreshTopbarCountsOnDataUpdate);
+                    document.addEventListener('visibilitychange', refreshTopbarCountsOnVisible);
+                });
+                onUnmounted(() => {
+                    if (topbarRefreshTimer) clearInterval(topbarRefreshTimer);
+                    window.removeEventListener('focus', refreshTopbarCountsOnFocus);
+                    window.removeEventListener('app-data-refresh', refreshTopbarCountsOnDataUpdate);
+                    document.removeEventListener('visibilitychange', refreshTopbarCountsOnVisible);
+                });
+
+                return {
+                    sidebarOpen,
+                    currentUserName,
+                    currentUserNameShort,
+                    visibleRoutes,
+                    currentPageTitle,
+                    handleLogout,
+                    supabaseStatus,
+                    unreadNotificationCount,
+                    pendingApprovalCount,
+                    showApprovalBadge,
+                    goToNotifications,
+                    goToApprovals
+                };
+            }
+        };
+
+        // ==================== Router Configuration ====================
+        const routeRoleMap = {
+            '/dashboard': ['admin', 'mentor', 'trainee'],
+            '/courses': ['admin', 'mentor', 'trainee'],
+            '/courses/:id': ['admin', 'mentor', 'trainee'],
+            '/exam': ['admin', 'trainee'],
+            '/tasks': ['admin', 'mentor', 'trainee'],
+            '/tasks/:id': ['admin', 'mentor', 'trainee'],
+            '/workflow': ['admin', 'mentor'],
+            '/courseware': ['admin', 'mentor', 'trainee'],
+            '/mentor': ['admin', 'mentor'],
+            '/kpi': ['admin', 'mentor', 'trainee'],
+            '/evaluation': ['admin', 'mentor'],
+            '/archive': ['admin', 'mentor'],
+            '/pilot': ['admin'],
+            '/resources': ['admin', 'mentor', 'trainee'],
+            '/notifications': ['admin', 'mentor', 'trainee'],
+            '/approvals': ['admin', 'mentor'],
+            '/system-health': ['admin'],
+            '/analytics': ['admin']
+        };
+        const routes = [
+            {
+                path: '/',
+                component: LoginView,
+                meta: { requiresAuth: false }
+            },
+            {
+                path: '/dashboard',
+                component: DashboardView,
+                meta: { requiresAuth: true, roles: routeRoleMap['/dashboard'] }
+            },
+            {
+                path: '/courses',
+                component: CoursesView,
+                meta: { requiresAuth: true, roles: routeRoleMap['/courses'] }
+            },
+            {
+                path: '/courses/:id',
+                component: CourseDetailView,
+                meta: { requiresAuth: true, roles: routeRoleMap['/courses/:id'] }
+            },
+            {
+                path: '/exam',
+                component: ExamView,
+                meta: { requiresAuth: true, roles: routeRoleMap['/exam'] }
+            },
+            {
+                path: '/tasks',
+                component: TasksView,
+                meta: { requiresAuth: true, roles: routeRoleMap['/tasks'] }
+            },
+            {
+                path: '/tasks/:id',
+                component: TaskDetailView,
+                meta: { requiresAuth: true, roles: routeRoleMap['/tasks/:id'] }
+            },
+            {
+                path: '/workflow',
+                component: TalentWorkflowView,
+                meta: { requiresAuth: true, roles: routeRoleMap['/workflow'] }
+            },
+            {
+                path: '/courseware',
+                component: CoursewareView,
+                meta: { requiresAuth: true, roles: routeRoleMap['/courseware'] }
+            },
+            {
+                path: '/mentor',
+                component: MentorView,
+                meta: { requiresAuth: true, roles: routeRoleMap['/mentor'] }
+            },
+            {
+                path: '/kpi',
+                component: KPIView,
+                meta: { requiresAuth: true, roles: routeRoleMap['/kpi'] }
+            },
+            {
+                path: '/evaluation',
+                component: EvaluationView,
+                meta: { requiresAuth: true, roles: routeRoleMap['/evaluation'] }
+            },
+            {
+                path: '/archive',
+                component: ArchiveView,
+                meta: { requiresAuth: true, roles: routeRoleMap['/archive'] }
+            },
+            {
+                path: '/pilot',
+                component: PilotRunView,
+                meta: { requiresAuth: true, roles: routeRoleMap['/pilot'] }
+            },
+            {
+                path: '/resources',
+                component: ResourcesView,
+                meta: { requiresAuth: true, roles: routeRoleMap['/resources'] }
+            },
+            {
+                path: '/notifications',
+                component: NotificationsView,
+                meta: { requiresAuth: true, roles: routeRoleMap['/notifications'] }
+            },
+            {
+                path: '/approvals',
+                component: ApprovalCenterView,
+                meta: { requiresAuth: true, roles: routeRoleMap['/approvals'] }
+            },
+            {
+                path: '/system-health',
+                component: SystemHealthView,
+                meta: { requiresAuth: true, roles: routeRoleMap['/system-health'] }
+            },
+            {
+                path: '/analytics',
+                component: AnalyticsView,
+                meta: { requiresAuth: true, roles: routeRoleMap['/analytics'] }
+            }
+        ];
+
+        const router = createRouter({
+            history: createWebHashHistory(),
+            routes
+        });
+
+        // Router guards
+        router.beforeEach(async (to, from, next) => {
+            if (!authInitialized.value) {
+                await initAuth();
+            }
+            const isAuthenticated = !!currentUser.value;
+            const currentRole = userProfile.value?.role || 'trainee';
+            const allowedRoles = Array.isArray(to.meta.roles) ? to.meta.roles : null;
+            if (to.meta.requiresAuth && !isAuthenticated) {
+                next('/');
+            } else if (to.path === '/' && isAuthenticated) {
+                next('/dashboard');
+            } else if (to.meta.requiresAuth && allowedRoles && !allowedRoles.includes(currentRole)) {
+                next('/dashboard');
+            } else {
+                next();
+            }
+        });
+
+        // ==================== App Setup ====================
+        const app = createApp({
+            template: `
+                <div v-if="!authInitialized" class="app-loading">
+                    <div class="app-loading-card">
+                        <div class="app-loading-spinner"></div>
+                        <div style="font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 8px;">系统初始化中</div>
+                        <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.7;">正在恢复登录状态与系统配置，请稍候片刻。</div>
+                    </div>
+                </div>
+                <deployment-setup-view v-else-if="!isSupabaseConfigured" />
+                <app-layout v-else />
+            `,
+            components: {
+                'app-layout': AppLayout,
+                'deployment-setup-view': DeploymentSetupView
+            },
+            setup() {
+                onMounted(async () => {
+                    // 初始化认证
+                    await initAuth();
+
+                    // 检查用户是否已登录
+                    if (currentUser.value && router.currentRoute.value.path === '/') {
+                        router.push('/dashboard');
+                    }
+                });
+
+                return {
+                    authInitialized,
+                    isSupabaseConfigured
+                };
+            }
+        });
+
+        app.use(router);
+        app.mount('#app');
+    </script>
+</body>
+</html>
